@@ -118,14 +118,14 @@ namespace LOGQ
         }
     }
 
-    public class Not : LAction
+    public class Not<T> : LAction where T: new()
     {
-        public Not(List<Predicate<Dictionary<BindKey, string>>> actionsToTry)
-        {
-            this.actionsToTry = actionsToTry
-                .Select<Predicate<Dictionary<BindKey, string>>, Predicate<Dictionary<BindKey, string>>>
-                (predicate => context => !predicate(context)).ToList();
-        }
+        public Not(List<Predicate<Dictionary<BindKey, string>>> actionsToTry) : base(actionsToTry) { }
+
+        public Not(Predicate<Dictionary<BindKey, string>> actionToTry) :
+            this(new List<Predicate<Dictionary<BindKey, string>>> { actionToTry }) { }
+
+        public Not(BoundFact<T> fact, KnowledgeBase knowledgeBase) : this(knowledgeBase.CheckForFacts(fact)) { }
 
         public override bool GetNext()
         {
@@ -136,6 +136,7 @@ namespace LOGQ
                 if (actionsToTry[offset - 1].Invoke(boundsCopy))
                 {
                     ResetBounds();
+                    continue;
                 }
 
                 return true;

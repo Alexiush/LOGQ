@@ -45,15 +45,8 @@ namespace LOGQ
                 {
                     factCheckPredicates.Add(context =>
                     {
-                        if (sampleFact == fact)
-                        {
-                            BindFact(sampleFact, context, fact);
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
+                        BindFact(sampleFact, context, fact);
+                        return (sampleFact == fact);
                     });
                 }
             }
@@ -64,15 +57,9 @@ namespace LOGQ
                 {
                     factCheckPredicates.Add(context =>
                     {
-                        if (rule.Execute())
-                        {
-                            BindFact(sampleFact, context);
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
+                        bool executionResult = rule.Execute();
+                        BindFact(sampleFact, context);
+                        return executionResult;
                     });
                 }
             }
