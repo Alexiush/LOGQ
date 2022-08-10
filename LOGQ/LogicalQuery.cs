@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using static LOGQ.Extensions.ExtensionsMethods;
 
 namespace LOGQ
 {
@@ -47,7 +47,7 @@ namespace LOGQ
 
         public override FactVariable AsFactVariable()
         {
-            return FactExtensions.Any();
+            return Any();
         }
     }
 
@@ -64,7 +64,7 @@ namespace LOGQ
 
         protected LAction() { }
 
-        public LAction(List<Predicate<Dictionary<BindKey, string>>> actionsToTry)
+        internal LAction(List<Predicate<Dictionary<BindKey, string>>> actionsToTry)
         {
             this.actionsToTry = actionsToTry;
         }
@@ -112,34 +112,6 @@ namespace LOGQ
                 }
                 // Bounds for bad approach are turned back
                 ResetBounds();
-            }
-
-            return false;
-        }
-    }
-
-    public class Not<T> : LAction where T: new()
-    {
-        public Not(List<Predicate<Dictionary<BindKey, string>>> actionsToTry) : base(actionsToTry) { }
-
-        public Not(Predicate<Dictionary<BindKey, string>> actionToTry) :
-            this(new List<Predicate<Dictionary<BindKey, string>>> { actionToTry }) { }
-
-        public Not(BoundFact<T> fact, KnowledgeBase knowledgeBase) : this(knowledgeBase.CheckForFacts(fact)) { }
-
-        public override bool GetNext()
-        {
-            while (offset < actionsToTry.Count)
-            {
-                offset++;
-
-                if (actionsToTry[offset - 1].Invoke(boundsCopy))
-                {
-                    ResetBounds();
-                    continue;
-                }
-
-                return true;
             }
 
             return false;

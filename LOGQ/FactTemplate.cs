@@ -36,13 +36,7 @@ namespace LOGQ
 
     public static class FactExtensions
     {
-        public static FactVariable Any()
-        {
-            FactVariable anyValue = new FactVariable("");
-            anyValue.MakeIgnorant();
-
-            return anyValue;
-        }
+        
     }
 
     // Must be treated as duck-typed object even with underlying Fact<T>

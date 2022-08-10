@@ -51,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ExtensionsMethods.cs" />
     <Compile Include="FactTemplate.cs" />
     <Compile Include="KnowledgeBase.cs" />
     <Compile Include="LogicalQuery.cs" />
