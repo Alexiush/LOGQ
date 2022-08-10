@@ -291,11 +291,6 @@ namespace LOGQ
             return AddNode(knowledgeBase.CheckForFacts(fact), true);
         }
 
-        private LogicalQuery With(LAction action)
-        {
-            return AddNode(action, true);
-        }
-
         public LogicalQuery With(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
@@ -313,11 +308,6 @@ namespace LOGQ
 
         // Adds false path
         // Must be some way to restrict multiple OrWith in the same scope as it is just erroneous behaviour
-        private LogicalQuery OrWith(LAction action)
-        {
-            return AddNode(action, false);
-        }
-
         public LogicalQuery OrWith(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
