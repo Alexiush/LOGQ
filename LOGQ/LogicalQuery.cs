@@ -61,7 +61,7 @@ namespace LOGQ
         // (False can be used in or path, empty options must get back to parent)
         public void Initialize();
         public void Rollback();
-        public bool GetNext(HashSet<BindKey> context);
+        public bool GetNext();
     }
 
     public class LAction : ILAction
@@ -72,12 +72,10 @@ namespace LOGQ
         // or for delegate producing some result type output
 
         
-        private List<Predicate<(HashSet<BindKey> bounds, 
-                                Dictionary<BindKey, string> copyStorage)>> actionsToTry;
+        private List<Predicate<Dictionary<BindKey, string>>> actionsToTry;
         private int offset = 0;
 
-        public LAction(List<Predicate<(HashSet<BindKey> bounds, 
-                                       Dictionary<BindKey, string> copyStorage)>> actionsToTry)
+        public LAction(List<Predicate<Dictionary<BindKey, string>>> actionsToTry)
         {
             this.actionsToTry = actionsToTry;
         }
@@ -112,13 +110,13 @@ namespace LOGQ
             IsInitialized = false;
         }
 
-        public bool GetNext(HashSet<BindKey> context)
+        public bool GetNext()
         {
             while (offset < actionsToTry.Count)
             {
                 offset++;
 
-                if (actionsToTry[offset - 1].Invoke((context, boundsCopy)))
+                if (actionsToTry[offset - 1].Invoke(boundsCopy))
                 {
                     // Bounds for good approach are saved
                     return true;
@@ -231,7 +229,7 @@ namespace LOGQ
                 {
                     if (!currentNode.isHidden)
                     {
-                        if (currentNode.boundAction.GetNext(query.context))
+                        if (currentNode.boundAction.GetNext())
                         {
                             currentNode = currentNode.nextOnTrue;
                             continue;
@@ -258,7 +256,6 @@ namespace LOGQ
             }
         }
 
-        private HashSet<BindKey> context = new HashSet<BindKey>();
         private QueryTree tree;
         private KnowledgeBase knowledgeBase;
 
@@ -266,22 +263,14 @@ namespace LOGQ
         // So either templated or just scoped they can utilize this constructor
         public LogicalQuery(LogicalQuery outerScope)
         {
-            context = new HashSet<BindKey>(outerScope.context);
             knowledgeBase = outerScope.knowledgeBase;
             tree = new QueryTree(this);
         }
 
-        public LogicalQuery(KnowledgeBase knowledgeBase, params BindKey[] bounds) 
+        public LogicalQuery(KnowledgeBase knowledgeBase) 
         {
             this.knowledgeBase = knowledgeBase;
-            context = new HashSet<BindKey>(bounds);
             tree = new QueryTree(this);
-        }
-
-        public LogicalQuery SetContext(HashSet<BindKey> context)
-        {
-            this.context = new HashSet<BindKey>(context);
-            return this;
         }
 
         private LogicalQuery AddNode(ILAction action, bool pathDirection)
@@ -297,19 +286,15 @@ namespace LOGQ
             return this;
         }
 
-        private LogicalQuery AddNode(List<Predicate<(HashSet<BindKey> bounds,
-            Dictionary<BindKey, string> copyStorage)>> actionInitializer, bool pathDirection)
+        private LogicalQuery AddNode(List<Predicate<Dictionary<BindKey, string>>> actionInitializer, bool pathDirection)
         {
             return AddNode(new LAction(actionInitializer), pathDirection);
         }
 
-        private LogicalQuery AddNode(Predicate<(HashSet<BindKey> bounds,
-            Dictionary<BindKey, string> copyStorage)> actionInitializer, bool pathDirection)
+        private LogicalQuery AddNode(Predicate<Dictionary<BindKey, string>> actionInitializer, bool pathDirection)
         {
-            List<Predicate<(HashSet<BindKey> bounds,
-                            Dictionary<BindKey, string> copyStorage)>> list =
-                new List<Predicate<(HashSet<BindKey> bounds,
-                                    Dictionary<BindKey, string> copyStorage)>>(new[] { actionInitializer });
+            List<Predicate<Dictionary<BindKey, string>>> list =
+                new List<Predicate<Dictionary<BindKey, string>>>(new[] { actionInitializer });
 
             return AddNode(list, pathDirection);
         }
@@ -324,14 +309,12 @@ namespace LOGQ
             return AddNode(action, true);
         }
 
-        public LogicalQuery With(List<Predicate<(HashSet<BindKey> bounds,
-                                                  Dictionary<BindKey, string> copyStorage)>> actionInitializer)
+        public LogicalQuery With(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
         }
 
-        public LogicalQuery With(Predicate<(HashSet<BindKey> bounds,
-                                            Dictionary<BindKey, string> copyStorage)> actionInitializer)
+        public LogicalQuery With(Predicate<Dictionary<BindKey, string>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
         }
@@ -348,14 +331,12 @@ namespace LOGQ
             return AddNode(action, false);
         }
 
-        public LogicalQuery OrWith(List<Predicate<(HashSet<BindKey> bounds,
-                                                    Dictionary<BindKey, string> copyStorage)>> actionInitializer)
+        public LogicalQuery OrWith(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
         }
 
-        public LogicalQuery OrWith(Predicate<(HashSet<BindKey> bounds,
-                                              Dictionary<BindKey, string> copyStorage)> actionInitializer)
+        public LogicalQuery OrWith(Predicate<Dictionary<BindKey, string>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
         }

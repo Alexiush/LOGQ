@@ -18,8 +18,8 @@ namespace LOGQ
         // Rule-based queries must get own iteration LAction and build in as LAction on some values somehow
 
         // Check for facts must remember about it comparing fact variables, but setting bind keys
-        private void BindFact<T>(BoundFact<T> sampleFact, (HashSet<BindKey> bounds,
-            Dictionary<BindKey, string> copyStorage) context, FactTemplate fact = null) where T : new()
+        private void BindFact<T>(BoundFact<T> sampleFact,
+            Dictionary<BindKey, string> copyStorage, FactTemplate fact = null) where T : new()
         {
             // Binds fact variables to samples bounds
 
@@ -28,15 +28,14 @@ namespace LOGQ
 
             foreach (var pair in bounds.Zip(values, (first, second) => (first, second)))
             {
-                pair.first.UpdateValue(context.copyStorage, pair.second.value);
+                pair.first.UpdateValue(copyStorage, pair.second.value);
             }
         }
 
-        public List<Predicate<(HashSet<BindKey> bounds, 
-            Dictionary<BindKey, string> copyStorage)>> CheckForFacts<T>(BoundFact<T> sampleFact) where T: new()
+        public List<Predicate<Dictionary<BindKey, string>>> CheckForFacts<T>(BoundFact<T> sampleFact) where T: new()
         {
-            List<Predicate<(HashSet<BindKey> bounds, Dictionary<BindKey, string> copyStorage)>> factCheckPredicates =
-                new List<Predicate<(HashSet<BindKey> bounds, Dictionary<BindKey, string> copyStorage)>>();
+            List<Predicate<Dictionary<BindKey, string>>> factCheckPredicates =
+                new List<Predicate<Dictionary<BindKey, string>>>();
 
             Type factType = typeof(Fact<T>);
 
@@ -65,7 +64,7 @@ namespace LOGQ
                 {
                     factCheckPredicates.Add(context =>
                     {
-                        if (rule.SetContext(context.bounds).Execute())
+                        if (rule.Execute())
                         {
                             BindFact(sampleFact, context);
                             return true;
