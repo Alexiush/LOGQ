@@ -51,7 +51,7 @@ namespace LOGQ
         }
     }
 
-    internal class LAction
+    public class LAction
     {
         // To get rid of single variant / multiple variants system using queue for both
         
@@ -59,8 +59,10 @@ namespace LOGQ
         // or for delegate producing some result type output
 
         
-        private List<Predicate<Dictionary<BindKey, string>>> actionsToTry;
-        private int offset = 0;
+        protected List<Predicate<Dictionary<BindKey, string>>> actionsToTry;
+        protected int offset = 0;
+
+        protected LAction() { }
 
         public LAction(List<Predicate<Dictionary<BindKey, string>>> actionsToTry)
         {
@@ -80,7 +82,7 @@ namespace LOGQ
             IsInitialized = true; 
         }
 
-        private void ResetBounds()
+        protected void ResetBounds()
         {
             foreach (KeyValuePair<BindKey, string> boundCopy in boundsCopy)
             {
@@ -97,7 +99,7 @@ namespace LOGQ
             IsInitialized = false;
         }
 
-        public bool GetNext()
+        public virtual bool GetNext()
         {
             while (offset < actionsToTry.Count)
             {
@@ -110,6 +112,33 @@ namespace LOGQ
                 }
                 // Bounds for bad approach are turned back
                 ResetBounds();
+            }
+
+            return false;
+        }
+    }
+
+    public class Not : LAction
+    {
+        public Not(List<Predicate<Dictionary<BindKey, string>>> actionsToTry)
+        {
+            this.actionsToTry = actionsToTry
+                .Select<Predicate<Dictionary<BindKey, string>>, Predicate<Dictionary<BindKey, string>>>
+                (predicate => context => !predicate(context)).ToList();
+        }
+
+        public override bool GetNext()
+        {
+            while (offset < actionsToTry.Count)
+            {
+                offset++;
+
+                if (actionsToTry[offset - 1].Invoke(boundsCopy))
+                {
+                    ResetBounds();
+                }
+
+                return true;
             }
 
             return false;
@@ -291,6 +320,11 @@ namespace LOGQ
             return AddNode(knowledgeBase.CheckForFacts(fact), true);
         }
 
+        public LogicalQuery With(LAction action)
+        {
+            return AddNode(action, true);
+        }
+
         public LogicalQuery With(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
@@ -308,6 +342,11 @@ namespace LOGQ
 
         // Adds false path
         // Must be some way to restrict multiple OrWith in the same scope as it is just erroneous behaviour
+        public LogicalQuery OrWith(LAction action)
+        {
+            return AddNode(action, false);
+        }
+
         public LogicalQuery OrWith(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
