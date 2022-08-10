@@ -51,20 +51,7 @@ namespace LOGQ
         }
     }
 
-    // Do I need an interface if LAction looks like only and final version
-
-    // Interface that defines an action that gives either result or false
-    public interface ILAction
-    {
-        // At first all succesful ways must be checked
-        // Also there must be difference between empty options and false ones
-        // (False can be used in or path, empty options must get back to parent)
-        public void Initialize();
-        public void Rollback();
-        public bool GetNext();
-    }
-
-    public class LAction : ILAction
+    internal class LAction
     {
         // To get rid of single variant / multiple variants system using queue for both
         
@@ -161,7 +148,7 @@ namespace LOGQ
             {
                 public Node parent;
 
-                public ILAction boundAction;
+                public LAction boundAction;
 
                 public Node nextOnTrue;
                 public Node nextOnFalse;
@@ -170,7 +157,7 @@ namespace LOGQ
 
                 public Node() { }
 
-                public Node(ILAction boundAction, Node parent)
+                public Node(LAction boundAction, Node parent)
                 {
                     this.boundAction = boundAction;
                     this.parent = parent;
@@ -196,7 +183,7 @@ namespace LOGQ
                 return true;
             }
 
-            public void Add(ILAction action)
+            public void Add(LAction action)
             {
                 Node newNode = new Node(action, currentNode);
 
@@ -213,7 +200,7 @@ namespace LOGQ
                 }
             }
 
-            public void AddFalse(ILAction action)
+            public void AddFalse(LAction action)
             {
                 Node newNode = new Node(action, root);
                 root.nextOnFalse = newNode;
@@ -273,7 +260,7 @@ namespace LOGQ
             tree = new QueryTree(this);
         }
 
-        private LogicalQuery AddNode(ILAction action, bool pathDirection)
+        private LogicalQuery AddNode(LAction action, bool pathDirection)
         {
             if (pathDirection)
             {
@@ -304,7 +291,7 @@ namespace LOGQ
             return AddNode(knowledgeBase.CheckForFacts(fact), true);
         }
 
-        public LogicalQuery With(ILAction action)
+        private LogicalQuery With(LAction action)
         {
             return AddNode(action, true);
         }
@@ -326,7 +313,7 @@ namespace LOGQ
 
         // Adds false path
         // Must be some way to restrict multiple OrWith in the same scope as it is just erroneous behaviour
-        public LogicalQuery OrWith(ILAction action)
+        private LogicalQuery OrWith(LAction action)
         {
             return AddNode(action, false);
         }
@@ -375,7 +362,7 @@ namespace LOGQ
 
         // Maybe there is a place for not
 
-        private void ContextRollback(ILAction action)
+        private void ContextRollback(LAction action)
         {
             action.Rollback();
         }
