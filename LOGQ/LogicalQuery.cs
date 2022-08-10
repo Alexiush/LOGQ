@@ -288,6 +288,8 @@ namespace LOGQ
             return AddNode(list, pathDirection);
         }
 
+        // Maybe always pass knowledge base with fact? 
+
         private LogicalQuery AddNode<T>(BoundFact<T> fact, bool pathDirection) where T: new()
         {
             return AddNode(knowledgeBase.CheckForFacts(fact), true);

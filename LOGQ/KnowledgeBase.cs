@@ -4,15 +4,14 @@ using System.Linq;
 
 namespace LOGQ
 {
+    public delegate LogicalQuery Rule(FactTemplate fact);
+
     public class KnowledgeBase
     {
         // List potentially can be replaced with some kind of sorted table of values
         // But that must not be an overkill as program can't check (now at least) if only suitable result is sought
         private Dictionary<Type, List<FactTemplate>> facts = new Dictionary<Type, List<FactTemplate>>();
-        private Dictionary<Type, List<LogicalQuery>> rules = new Dictionary<Type, List<LogicalQuery>>();
-
-        // TODO: Generate one-action query for checking of fact existence by value
-        // Better to generate LAction from the start, as it is one operation check
+        private Dictionary<Type, List<Rule>> rules = new Dictionary<Type, List<Rule>>();
 
         // TODO: Option to add a rule-query for checking of fact existence by rule
         // Rule-based queries must get own iteration LAction and build in as LAction on some values somehow
@@ -53,11 +52,11 @@ namespace LOGQ
 
             if (rules.ContainsKey(factType))
             {
-                foreach (LogicalQuery rule in rules[factType])
+                foreach (Rule rule in rules[factType])
                 {
                     factCheckPredicates.Add(context =>
                     {
-                        bool executionResult = rule.Execute();
+                        bool executionResult = rule(sampleFact).Execute();
                         BindFact(sampleFact, context);
                         return executionResult;
                     });
@@ -82,13 +81,13 @@ namespace LOGQ
         // Rule must specify what kind of condition is needed to conclude fact existence
         // Rules may be defined as query that succeeds only if fact exists
         // As an initial parameters it will recieve fact variables for fact it will try to conclude
-        public void AddRule<T>(LogicalQuery rule) where T: FactTemplate
+        public void AddRule<T>(Rule rule) where T: FactTemplate
         {
             Type factType = typeof(T);
 
             if (!facts.ContainsKey(factType))
             {
-                rules.Add(factType, new List<LogicalQuery>());
+                rules.Add(factType, new List<Rule>());
             }
 
             rules[factType].Add(rule);
