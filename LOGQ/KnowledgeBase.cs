@@ -53,7 +53,6 @@ namespace LOGQ
                 new List<Predicate<Dictionary<BindKey, string>>>();
 
             Type factType = typeof(Fact<T>);
-            Type domainType = typeof(T);
 
             if (facts.ContainsKey(factType))
             {
@@ -66,6 +65,16 @@ namespace LOGQ
                     });
                 }
             }
+
+            return factCheckPredicates;
+        }
+
+        public List<Predicate<Dictionary<BindKey, string>>> CheckForRules<T>(BoundFact<T> sampleFact) where T : new()
+        {
+            List<Predicate<Dictionary<BindKey, string>>> factCheckPredicates =
+                new List<Predicate<Dictionary<BindKey, string>>>();
+
+            Type domainType = typeof(T);
 
             if (rules.ContainsKey(domainType))
             {
