@@ -58,7 +58,11 @@ namespace LOGQ
         // Queues look too large for pretty big data sets, they rather must be moved to lazy queues
         // or for delegate producing some result type output
 
-        
+        // Better switch to some kind of inner Get Next:
+        //  - Search for rules is not linear
+        //  - Lists are just pointers to list instantiated elsewhere
+        //  - Passing list of actions still requires lots of code, creating GetNext function won't be much harder
+
         protected List<Predicate<Dictionary<BindKey, string>>> actionsToTry;
         protected int offset = 0;
 
