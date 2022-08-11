@@ -110,27 +110,5 @@ namespace LOGQ
 
             rules[factType].Add(rule);
         }
-
-        /*
-        public List<T> Get<T>(T example) where T : FactTemplate, new()
-        {
-            Type factType = typeof(Fact<T>);
-            List<T> fittingFacts = new List<T>();
-
-            if (facts.ContainsKey(factType))
-            {
-                facts[factType].ForEach(fact =>
-                {
-                    T typedFact = (T)fact;
-                    if (typedFact.EqualsFact(typedFact))
-                    {
-                        fittingFacts.Add(typedFact);
-                    }
-                });
-            }
-
-            return fittingFacts;
-        }
-        */
     }
 }
