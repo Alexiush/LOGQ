@@ -4,7 +4,23 @@ using System.Linq;
 
 namespace LOGQ
 {
-    public delegate LogicalQuery Rule(FactTemplate fact);
+    public abstract class Rule { }
+
+    public class TypedRule<T> : Rule where T: new()
+    {
+        public delegate LogicalQuery RuleBody(BoundFact<T> fact);
+        private RuleBody body;
+
+        public TypedRule(RuleBody body)
+        {
+            this.body = body;
+        }
+
+        public LogicalQuery Body(BoundFact<T> fact)
+        {
+            return body(fact);
+        }
+    }
 
     public class KnowledgeBase
     {
@@ -37,6 +53,7 @@ namespace LOGQ
                 new List<Predicate<Dictionary<BindKey, string>>>();
 
             Type factType = typeof(Fact<T>);
+            Type domainType = typeof(T);
 
             if (facts.ContainsKey(factType))
             {
@@ -50,13 +67,14 @@ namespace LOGQ
                 }
             }
 
-            if (rules.ContainsKey(factType))
+            if (rules.ContainsKey(domainType))
             {
-                foreach (Rule rule in rules[factType])
+                foreach (Rule rule in rules[domainType])
                 {
                     factCheckPredicates.Add(context =>
                     {
-                        bool executionResult = rule(sampleFact).Execute();
+                        TypedRule<T> typedRule = (TypedRule<T>)rule;
+                        bool executionResult = typedRule.Body(sampleFact).Execute();
                         BindFact(sampleFact, context);
                         return executionResult;
                     });
@@ -81,11 +99,11 @@ namespace LOGQ
         // Rule must specify what kind of condition is needed to conclude fact existence
         // Rules may be defined as query that succeeds only if fact exists
         // As an initial parameters it will recieve fact variables for fact it will try to conclude
-        public void AddRule<T>(Rule rule) where T: FactTemplate
+        public void AddRule<T>(TypedRule<T> rule) where T: new()
         {
             Type factType = typeof(T);
 
-            if (!facts.ContainsKey(factType))
+            if (!rules.ContainsKey(factType))
             {
                 rules.Add(factType, new List<Rule>());
             }
