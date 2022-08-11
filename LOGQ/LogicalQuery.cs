@@ -246,19 +246,16 @@ namespace LOGQ
         }
 
         private QueryTree tree;
-        private KnowledgeBase knowledgeBase;
 
         // Any templated logical queries are running inside other queries
         // So either templated or just scoped they can utilize this constructor
         public LogicalQuery(LogicalQuery outerScope)
         {
-            knowledgeBase = outerScope.knowledgeBase;
             tree = new QueryTree(this);
         }
 
-        public LogicalQuery(KnowledgeBase knowledgeBase) 
+        public LogicalQuery() 
         {
-            this.knowledgeBase = knowledgeBase;
             tree = new QueryTree(this);
         }
 
@@ -290,7 +287,7 @@ namespace LOGQ
 
         // Maybe always pass knowledge base with fact? 
 
-        private LogicalQuery AddNode<T>(BoundFact<T> fact, bool pathDirection) where T: new()
+        private LogicalQuery AddNode<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase, bool pathDirection) where T: new()
         {
             return AddNode(knowledgeBase.CheckForFacts(fact), true);
         }
@@ -310,9 +307,9 @@ namespace LOGQ
             return AddNode(actionInitializer, true);
         }
 
-        public LogicalQuery With<T>(BoundFact<T> fact) where T: new()
+        public LogicalQuery With<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase) where T: new()
         {
-            return AddNode(fact, true);
+            return AddNode(fact, knowledgeBase, true);
         }
 
         // Adds false path
@@ -332,9 +329,9 @@ namespace LOGQ
             return AddNode(actionInitializer, false);
         }
 
-        public LogicalQuery OrWith<T>(BoundFact<T> fact) where T: new()
+        public LogicalQuery OrWith<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase) where T: new()
         {
-            return AddNode(fact, false);
+            return AddNode(fact, knowledgeBase, false);
         }
 
         // Scopes out - performs all actions inside as a subquery - inits with context of origin, performs all actions and proceeds
