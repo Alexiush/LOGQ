@@ -63,28 +63,40 @@ namespace LOGQ
         //  - Lists are just pointers to list instantiated elsewhere
         //  - Passing list of actions still requires lots of code, creating GetNext function won't be much harder
 
-        protected List<Predicate<Dictionary<BindKey, string>>> actionsToTry;
-        protected int offset = 0;
+        protected BacktrackIterator iterator;
 
         protected LAction() { }
 
-        internal LAction(List<Predicate<Dictionary<BindKey, string>>> actionsToTry)
+        internal LAction(BacktrackIterator iterator)
         {
-            this.actionsToTry = actionsToTry;
+            this.iterator = iterator;
+        }
+
+        internal LAction(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
+        {
+            int offset = 0;
+
+            iterator = new BacktrackIterator(
+                () =>
+                {
+                    if (offset >= actionInitializer.Count)
+                    {
+                        return null;
+                    }
+
+                    Predicate<Dictionary<BindKey, string>> predicate =
+                        actionInitializer[offset];
+
+                    offset++;
+                    return predicate;
+                },
+                () => offset = 0
+            ); 
         }
 
         // Each changed bound variable saves it's state before the change happens
         // at rollback or values are restored
         public Dictionary<BindKey, string> boundsCopy = new Dictionary<BindKey, string>();
-
-        public bool IsInitialized { get; set; } = false;
-
-        public void Initialize()
-        {
-            // Builds actions to try queue
-
-            IsInitialized = true; 
-        }
 
         protected void ResetBounds()
         {
@@ -99,23 +111,24 @@ namespace LOGQ
         public void Rollback()
         {
             ResetBounds();
-            offset = 0;
-            IsInitialized = false;
+            iterator.Reset();
         }
 
         public virtual bool GetNext()
         {
-            while (offset < actionsToTry.Count)
-            {
-                offset++;
+            Predicate<Dictionary<BindKey, string>> predicate = iterator.GetNext(); 
 
-                if (actionsToTry[offset - 1].Invoke(boundsCopy))
+            while (predicate != null)
+            {
+                if (predicate.Invoke(boundsCopy))
                 {
                     // Bounds for good approach are saved
                     return true;
                 }
+
                 // Bounds for bad approach are turned back
                 ResetBounds();
+                predicate = iterator.GetNext();
             }
 
             return false;
