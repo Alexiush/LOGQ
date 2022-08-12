@@ -37,6 +37,11 @@ namespace LOGQ
         {
             return new FactVariable(Value);
         }
+
+        public virtual RuleVariable AsRuleVariable()
+        {
+            return new RuleVariable(Value);
+        }
     }
 
     public class DummyBound: BindKey
@@ -45,7 +50,12 @@ namespace LOGQ
 
         public override FactVariable AsFactVariable()
         {
-            return Any();
+            return AnyFact();
+        }
+
+        public override RuleVariable AsRuleVariable()
+        {
+            return AnyRule();
         }
     }
 

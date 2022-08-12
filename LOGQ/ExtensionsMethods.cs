@@ -19,9 +19,17 @@ namespace LOGQ.Extensions
         public static LAction Not<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase) where T : new()
             => Not(knowledgeBase.CheckForFacts(fact));
 
-        public static FactVariable Any()
+        public static FactVariable AnyFact()
         {
             FactVariable anyValue = new FactVariable("");
+            anyValue.MakeIgnorant();
+
+            return anyValue;
+        }
+
+        public static RuleVariable AnyRule()
+        {
+            RuleVariable anyValue = new RuleVariable("");
             anyValue.MakeIgnorant();
 
             return anyValue;

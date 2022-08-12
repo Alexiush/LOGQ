@@ -34,11 +34,6 @@ namespace LOGQ
         }
     }
 
-    public static class FactExtensions
-    {
-        
-    }
-
     // Must be treated as duck-typed object even with underlying Fact<T>
     public abstract class FactTemplate
     {
