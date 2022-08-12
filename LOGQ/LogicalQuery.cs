@@ -8,9 +8,7 @@ namespace LOGQ
     public class BindKey
     {
         public readonly string name;
-        private string value;
-
-        public string Value { get { return value; } }
+        public string Value { get; private set; }
 
         protected BindKey() {}
 
@@ -22,22 +20,22 @@ namespace LOGQ
         public BindKey(string name, string value)
         {
             this.name = name;
-            this.value = value;
+            Value = value;
         }
 
         public void UpdateValue(Dictionary<BindKey, string> copyStorage, string value)
         {
             if (!copyStorage.ContainsKey(this))
             {
-                copyStorage[this] = this.value;
+                copyStorage[this] = this.Value;
             }
 
-            this.value = value;
+            Value = value;
         }
 
         public virtual FactVariable AsFactVariable()
         {
-            return new FactVariable(value);
+            return new FactVariable(Value);
         }
     }
 
@@ -289,6 +287,11 @@ namespace LOGQ
             return this;
         }
 
+        private LogicalQuery AddNode(BacktrackIterator iterator, bool pathDirection)
+        {
+            return AddNode(new LAction(iterator), pathDirection);
+        }
+
         private LogicalQuery AddNode(List<Predicate<Dictionary<BindKey, string>>> actionInitializer, bool pathDirection)
         {
             return AddNode(new LAction(actionInitializer), pathDirection);
@@ -314,6 +317,11 @@ namespace LOGQ
             return AddNode(action, true);
         }
 
+        public LogicalQuery With(BacktrackIterator iterator)
+        {
+            return AddNode(iterator, true);
+        }
+
         public LogicalQuery With(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
@@ -334,6 +342,11 @@ namespace LOGQ
         public LogicalQuery OrWith(LAction action)
         {
             return AddNode(action, false);
+        }
+
+        public LogicalQuery OrWith(BacktrackIterator iterator)
+        {
+            return AddNode(iterator, false);
         }
 
         public LogicalQuery OrWith(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
