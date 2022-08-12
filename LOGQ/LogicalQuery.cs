@@ -169,28 +169,30 @@ namespace LOGQ
 
                 public Node nextOnTrue;
                 public Node nextOnFalse;
+                public Node localRoot;
 
                 public bool isHidden = false;
+                public bool wentFalse = false;
 
                 public Node() { }
 
-                public Node(LAction boundAction, Node parent)
+                public Node(LAction boundAction, Node parent, Node localRoot)
                 {
                     this.boundAction = boundAction;
                     this.parent = parent;
+                    this.localRoot = localRoot;
                 }
             }
 
-            private Node currentNode;
-            private Node root;
+            private Node currentNode = null;
+            private Node rootGlobal = null;
+            private Node rootLocal = null;
 
             public bool Cut()
             {
-                // Rollback results must combine all replaced layers
-                // They must be traversed and merged in one big rollback
-                // It must provide some interesting way to do it as rollback is driven by the action
                 Node pointer = currentNode.parent;
-                while (pointer != root)
+
+                while (pointer != currentNode.localRoot)
                 {
                     pointer.isHidden = true;
                     pointer = pointer.parent;
@@ -200,34 +202,49 @@ namespace LOGQ
                 return true;
             }
 
+            void SetGlobalRoot(Node newGlobalRoot)
+            {
+                rootGlobal = newGlobalRoot;
+                SetLocalRoot(newGlobalRoot);
+                currentNode = newGlobalRoot;
+            }
+
+            void SetLocalRoot(Node newLocalRoot)
+            {
+                rootLocal = newLocalRoot;
+            }
+
             public void Add(LAction action)
             {
-                Node newNode = new Node(action, currentNode);
+                Node newNode = new Node(action, currentNode, rootLocal);
 
-                if (root is null)
+                if (rootGlobal is null)
                 {
-                    root = newNode;
-                    currentNode = root;
+                    SetGlobalRoot(newNode);
                     return;
                 }
-                else
-                {
-                    currentNode.nextOnTrue = newNode;
-                    currentNode = newNode;
-                }
+
+                currentNode.nextOnTrue = newNode;
+                currentNode = newNode;
             }
 
             public void AddFalse(LAction action)
             {
-                Node newNode = new Node(action, root);
-                root.nextOnFalse = newNode;
-                
+                Node newNode = new Node(action, rootLocal, rootLocal);
+
+                if (rootLocal is null)
+                {
+                    // throw exception 
+                }
+
+                rootLocal.nextOnFalse = newNode;
+                SetLocalRoot(newNode);
                 currentNode = newNode;
             }
 
             public bool Execute()
             {
-                currentNode = root;
+                currentNode = rootGlobal;
 
                 while (!(currentNode == null))
                 {
@@ -239,24 +256,44 @@ namespace LOGQ
                             continue;
                         }
 
-                        // The trick is to assign it to the highest element
-
-                        if (currentNode.nextOnFalse != null)
+                        if (currentNode.nextOnFalse != null && !currentNode.wentFalse)
                         {
+                            currentNode.wentFalse = true;
                             currentNode = currentNode.nextOnFalse;
                             continue;
                         }
                     }
-                    else
+
+                    if (currentNode == rootGlobal)
                     {
-                        currentNode.isHidden = false;
+                        return false;
                     }
 
                     query.ContextRollback(currentNode.boundAction);
                     currentNode = currentNode.parent;
                 }
 
-                return !(currentNode == root.parent);
+                return true;
+            }
+
+            private void ResetNode(Node node)
+            {
+                if (node == null)
+                {
+                    return;
+                }
+
+                node.boundAction.Rollback();
+                node.isHidden = false;
+                node.wentFalse = false;
+
+                ResetNode(node.nextOnTrue);
+                ResetNode(node.nextOnFalse);
+            }
+
+            public void Reset()
+            {
+                ResetNode(rootGlobal);
             }
         }
 
@@ -369,7 +406,23 @@ namespace LOGQ
         {
             // as it must be possible to create templated query 
             // both action of creation and action of work must be encapsulated here
-            return With(context => innerQuery.Execute());
+            bool metTerminalCondition = false;
+
+            return With(new BacktrackIterator(
+                () => {
+                    if (metTerminalCondition)
+                    {
+                        return null;
+                    }
+
+                    metTerminalCondition = !innerQuery.Execute();
+                    return context => !metTerminalCondition;
+                },
+                () => {
+                    innerQuery.Reset();
+                    metTerminalCondition = false;
+                }
+            ));
         }
 
         public LogicalQuery Cut()
@@ -379,11 +432,10 @@ namespace LOGQ
             // but has no info on previous layers (it's cut and will never get back on)
 
             // so as soon as some root gets succesful and query gets to cut layer - it never goes back
-
-            // TODO: need to add action that restructures tree (selects current node as root and clears it's parent)
-
             // Must restructure one path - if after cut everything turns out bad - false path must be considered too
-            return With(context => tree.Cut());
+            
+            bool madeCut = false;
+            return With(context =>  madeCut ? madeCut : tree.Cut());
         }
 
         public LogicalQuery Fail()
@@ -396,6 +448,11 @@ namespace LOGQ
         private void ContextRollback(LAction action)
         {
             action.Rollback();
+        }
+
+        private void Reset()
+        {
+            tree.Reset();
         }
 
         public bool Execute()
