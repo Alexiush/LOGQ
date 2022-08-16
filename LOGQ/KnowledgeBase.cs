@@ -6,9 +6,11 @@ namespace LOGQ
 {
     public abstract class Rule { }
 
+    // must be reworked as rule also can be marked with it's pattern
+
     public class TypedRule<T> : Rule where T: new()
     {
-        public delegate LogicalQuery RuleBody(BoundFact<T> fact);
+        public delegate LogicalQuery RuleBody(BoundRule<T> body);
         private RuleBody body;
 
         public TypedRule(RuleBody body)
@@ -16,9 +18,9 @@ namespace LOGQ
             this.body = body;
         }
 
-        public LogicalQuery Body(BoundFact<T> fact)
+        public LogicalQuery Body(BoundRule<T> body)
         {
-            return body(fact);
+            return this.body(body);
         }
     }
 
@@ -33,13 +35,23 @@ namespace LOGQ
         // Rule-based queries must get own iteration LAction and build in as LAction on some values somehow
 
         // Check for facts must remember about it comparing fact variables, but setting bind keys
-        private void BindFact<T>(BoundFact<T> sampleFact,
-            Dictionary<BindKey, string> copyStorage, FactTemplate fact = null) where T : new()
+        private void BindFact<T>(BoundFact<T> sampleFact, FactTemplate fact, Dictionary<BindKey, string> copyStorage) where T : new()
         {
             // Binds fact variables to samples bounds
 
             List<BindKey> bounds = sampleFact.Bounds;
-            List<FactVariable> values = fact is null ? sampleFact.Values.Values.ToList() : fact.Values.Values.ToList();
+            List<FactVariable> values = fact.Values.Values.ToList();
+
+            foreach (var pair in bounds.Zip(values, (first, second) => (first, second)))
+            {
+                pair.first.UpdateValue(copyStorage, pair.second.value);
+            }
+        }
+
+        private void BindRule<T>(BoundRule<T> rule, Dictionary<BindKey, string> copyStorage) where T : new()
+        {
+            List<BindKey> bounds = rule.Bounds;
+            List<RuleVariable> values = rule.Values.Values.ToList();
 
             foreach (var pair in bounds.Zip(values, (first, second) => (first, second)))
             {
@@ -60,7 +72,7 @@ namespace LOGQ
                 {
                     factCheckPredicates.Add(context =>
                     {
-                        BindFact(sampleFact, context, fact);
+                        BindFact(sampleFact, fact, context);
                         return (sampleFact == fact);
                     });
                 }
@@ -69,9 +81,9 @@ namespace LOGQ
             return factCheckPredicates;
         }
 
-        public List<Predicate<Dictionary<BindKey, string>>> CheckForRules<T>(BoundFact<T> sampleFact) where T : new()
+        public List<Predicate<Dictionary<BindKey, string>>> CheckForRules<T>(BoundRule<T> ruleHead) where T : new()
         {
-            List<Predicate<Dictionary<BindKey, string>>> factCheckPredicates =
+            List<Predicate<Dictionary<BindKey, string>>> ruleCheckPredicates =
                 new List<Predicate<Dictionary<BindKey, string>>>();
 
             Type domainType = typeof(T);
@@ -80,17 +92,17 @@ namespace LOGQ
             {
                 foreach (Rule rule in rules[domainType])
                 {
-                    factCheckPredicates.Add(context =>
+                    ruleCheckPredicates.Add(context =>
                     {
                         TypedRule<T> typedRule = (TypedRule<T>)rule;
-                        bool executionResult = typedRule.Body(sampleFact).Execute();
-                        BindFact(sampleFact, context);
+                        bool executionResult = typedRule.Body(ruleHead).Execute();
+                        BindRule(ruleHead, context);
                         return executionResult;
                     });
                 }
             }
 
-            return factCheckPredicates;
+            return ruleCheckPredicates;
         }
 
         public void AddFact<T>(T fact) where T: new()

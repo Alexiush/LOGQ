@@ -352,11 +352,14 @@ namespace LOGQ
             return AddNode(list, pathDirection);
         }
 
-        // Maybe always pass knowledge base with fact? 
+        private LogicalQuery AddNode<T>(BoundRule<T> rule, KnowledgeBase knowledgeBase, bool pathDirection) where T: new()
+        {
+            return AddNode(knowledgeBase.CheckForRules(rule), pathDirection);
+        }
 
         private LogicalQuery AddNode<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase, bool pathDirection) where T: new()
         {
-            return AddNode(knowledgeBase.CheckForFacts(fact), true);
+            return AddNode(knowledgeBase.CheckForFacts(fact), pathDirection);
         }
 
         public LogicalQuery With(LAction action)
@@ -377,6 +380,11 @@ namespace LOGQ
         public LogicalQuery With(Predicate<Dictionary<BindKey, string>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
+        }
+
+        public LogicalQuery With<T>(BoundRule<T> rule, KnowledgeBase knowledgeBase) where T : new()
+        {
+            return AddNode(rule, knowledgeBase, true);
         }
 
         public LogicalQuery With<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase) where T: new()
@@ -404,6 +412,11 @@ namespace LOGQ
         public LogicalQuery OrWith(Predicate<Dictionary<BindKey, string>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
+        }
+
+        public LogicalQuery OrWith<T>(BoundRule<T> rule, KnowledgeBase knowledgeBase) where T : new()
+        {
+            return AddNode(rule, knowledgeBase, false);
         }
 
         public LogicalQuery OrWith<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase) where T: new()
