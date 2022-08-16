@@ -1,64 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using static LOGQ.Extensions.ExtensionsMethods;
 
 namespace LOGQ
 {
-    // BindKey must be connected to some FactVariable or can act like this
-    public class BindKey
-    {
-        public readonly string name;
-        public string Value { get; private set; }
-
-        protected BindKey() {}
-
-        public BindKey(string name)
-        {
-            this.name = name;
-        }
-
-        public BindKey(string name, string value)
-        {
-            this.name = name;
-            Value = value;
-        }
-
-        public void UpdateValue(Dictionary<BindKey, string> copyStorage, string value)
-        {
-            if (!copyStorage.ContainsKey(this))
-            {
-                copyStorage[this] = this.Value;
-            }
-
-            Value = value;
-        }
-
-        public virtual FactVariable AsFactVariable()
-        {
-            return new FactVariable(Value);
-        }
-
-        public virtual RuleVariable AsRuleVariable()
-        {
-            return new RuleVariable(Value);
-        }
-    }
-
-    public class DummyBound: BindKey
-    {
-        public DummyBound() {}
-
-        public override FactVariable AsFactVariable()
-        {
-            return AnyFact();
-        }
-
-        public override RuleVariable AsRuleVariable()
-        {
-            return AnyRule();
-        }
-    }
-
     public class LAction
     {
         // To get rid of single variant / multiple variants system using queue for both

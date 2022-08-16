@@ -52,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BacktrackIterator.cs" />
+    <Compile Include="BindKey.cs" />
     <Compile Include="ExtensionsMethods.cs" />
     <Compile Include="FactTemplate.cs" />
     <Compile Include="KnowledgeBase.cs" />
