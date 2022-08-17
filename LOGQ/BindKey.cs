@@ -3,7 +3,7 @@ using static LOGQ.Extensions.ExtensionsMethods;
 
 namespace LOGQ
 {
-    // BindKey must be connected to some FactVariable or can act like this
+    // Create Generic based BindKey
     public class BindKey
     {
         public readonly string name;
@@ -59,6 +59,7 @@ namespace LOGQ
     }
 
     // Must be used in duck-typing for pattern matching
+    // Must turn into bound after getting some value
     public class Unbound : BindKey
     {
         public Unbound() { }

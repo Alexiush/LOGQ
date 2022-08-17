@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 
+// Must contain only Variable class from now
+
 // Looks like no binding-factvar conversion is provided 
 // But with copy storage mechanism it can be saved if knowledge base would create bounds through get facts
 namespace LOGQ
 {
+    // Must be renamed into variable
+    // Both rules and facts will utilize variable and bound variable classes (with generics)
     public struct FactVariable
     {
         public string value;
