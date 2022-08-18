@@ -55,6 +55,7 @@
     <Compile Include="BindKey.cs" />
     <Compile Include="ExtensionsMethods.cs" />
     <Compile Include="FactTemplate.cs" />
+    <Compile Include="GenericVariable.cs" />
     <Compile Include="KnowledgeBase.cs" />
     <Compile Include="LogicalQuery.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
