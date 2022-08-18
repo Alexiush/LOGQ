@@ -56,18 +56,21 @@ namespace LOGQ
         }
     }
 
-    /*
-    class DummyBound<T> : IgnorableVariable<T>
+    class DummyBoundVariable<T> : BoundVariable<T>
     {
-        public void UpdateValue(Dictionary<BoundVariable<T>, T> copyStorage, T value)
+        public static bool operator ==(DummyBoundVariable<T> fact, BoundVariable<T> otherFact)
         {
-            if (!copyStorage.ContainsKey(this))
-            {
-                copyStorage[this] = this.value;
-            }
+            return true;
+        }
 
-            this.value = value;
+        public static bool operator !=(DummyBoundVariable<T> fact, BoundVariable<T> otherFact)
+        {
+            return false;
         }
     }
-    */
+
+    // Base class to generate patterns to match rule head (can't be exact values)
+    // Like Any, Equals, Unbound, ...
+
+    class RuleVariable<T> : Variable<T> { }
 }
