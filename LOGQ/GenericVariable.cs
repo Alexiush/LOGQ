@@ -30,13 +30,26 @@ namespace LOGQ
 
     class BoundVariable<T> : Variable<T>
     {
-        public void UpdateValue(Dictionary<BoundVariable<T>, T> copyStorage, T value)
+        public BoundVariable() { }
+
+        public BoundVariable(T value) : base(value)
         {
-            if (!copyStorage.ContainsKey(this))
+            copies.Push(value);
+        }
+
+        // Considered unbound if stack is empty
+        private Stack<T> copies = new Stack<T>();
+
+        public bool IsBound() => copies.Count > 0;
+
+        public void UpdateValue(List<BoundVariable<T>> copyStorage, T value)
+        {
+            if (!copyStorage.Contains(this))
             {
-                copyStorage[this] = this.value;
+                copyStorage.Add(this);
             }
 
+            copies.Push(value);
             this.value = value;
         }
     }
@@ -73,4 +86,44 @@ namespace LOGQ
     // Like Any, Equals, Unbound, ...
 
     class RuleVariable<T> : Variable<T> { }
+
+    class AnyValue<T> : RuleVariable<T>
+    {
+        public static bool operator ==(AnyValue<T> fact, BoundVariable<T> otherFact)
+        {
+            return true;
+        }
+
+        public static bool operator !=(AnyValue<T> fact, BoundVariable<T> otherFact)
+        {
+            return false;
+        }
+    }
+
+    class SameValue<T> : RuleVariable<T>
+    {
+        public static bool operator ==(SameValue<T> fact, BoundVariable<T> otherFact)
+        {
+            // make value seen somehow
+            return fact.value == otherFact.value;
+        }
+
+        public static bool operator !=(SameValue<T> fact, BoundVariable<T> otherFact)
+        {
+            return !(fact == otherFact);
+        }
+    }
+
+    class UnboundValue<T> : RuleVariable<T>
+    {
+        public static bool operator ==(UnboundValue<T> fact, BoundVariable<T> otherFact)
+        {
+            return !otherFact.IsBound();
+        }
+
+        public static bool operator !=(UnboundValue<T> fact, BoundVariable<T> otherFact)
+        {
+            return !(fact == otherFact);
+        }
+    }
 }

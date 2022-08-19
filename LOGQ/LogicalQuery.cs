@@ -48,8 +48,12 @@ namespace LOGQ
 
         // Each changed bound variable saves it's state before the change happens
         // at rollback or values are restored
+
+        // Now Bounds themselves control their values history
+        // So it must be replaced with a hashset or list (multiple changes)
         public Dictionary<BindKey, string> boundsCopy = new Dictionary<BindKey, string>();
 
+        // That means Reset bounds calls for Rollback for each bound in the list
         protected void ResetBounds()
         {
             foreach (KeyValuePair<BindKey, string> boundCopy in boundsCopy)
