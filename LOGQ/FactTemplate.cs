@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 // But with copy storage mechanism it can be saved if knowledge base would create bounds through get facts
 namespace LOGQ
 {
+    /*
     // Must be renamed into variable
     // Both rules and facts will utilize variable and bound variable classes (with generics)
     public struct FactVariable
@@ -127,4 +128,5 @@ namespace LOGQ
             }
         }
     }
+    */
 }

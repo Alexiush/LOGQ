@@ -1,9 +1,12 @@
 ﻿using System.Collections.Generic;
+using LOGQ_Source_Generation;
 using static LOGQ.Extensions.ExtensionsMethods;
 
 namespace LOGQ
 {
+    /*
     // Create Generic based BindKey
+    
     public class BindKey
     {
         public readonly string name;
@@ -74,4 +77,5 @@ namespace LOGQ
             return AnyRule();
         }
     }
+    */
 }

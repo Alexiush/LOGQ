@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace LOGQ
 {
+    /*
     // Class that works almost like fact template, but must not be accepted as such an argument
     // Possibly can have room for more patterns 
 
@@ -127,4 +128,5 @@ namespace LOGQ
             }
         }
     }
+    */
 }
