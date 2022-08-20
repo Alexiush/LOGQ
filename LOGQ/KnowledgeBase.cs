@@ -4,23 +4,62 @@ using System.Linq;
 
 namespace LOGQ
 {
-    public abstract class Rule { }
-
-    // must be reworked as rule also can be marked with it's pattern
-
-    public class TypedRule<T> : Rule where T: new()
+    public class Fact 
     {
-        public delegate LogicalQuery RuleBody(BoundRule<T> body);
-        private RuleBody body;
+        public List<IVariable> Values;
 
-        public TypedRule(RuleBody body)
+        public virtual Type FactType()
         {
-            this.body = body;
+            return GetType();
         }
+    }
 
-        public LogicalQuery Body(BoundRule<T> body)
+    public class BoundFact : Fact 
+    {
+        public List<IBound> Bounds;
+
+        // Check for facts must remember about it comparing fact variables, but setting bind keys
+        public void Bind(Fact fact, List<IBound> copyStorage)
         {
-            return this.body(body);
+            // Binds fact variables to samples bounds
+
+            /*
+            List<IBound> bounds = Bounds;
+            List<IVariable> values = fact.Values;
+
+            foreach (var pair in bounds.Zip(values, (first, second) => (first, second)))
+            {
+                pair.first.UpdateValue(copyStorage, pair.second.value);
+            }
+            */
+        }
+    }
+
+    public class Rule 
+    {
+        public List<IVariable> Values;
+
+        public virtual Type RuleType() 
+        { 
+            return GetType(); 
+        }
+    }
+
+    public class BoundRule : Rule
+    {
+        public List<IBound> Bounds;
+
+        public void Bind(List<IBound> copyStorage)
+        {
+            /*
+            List<IBound> bounds = Bounds;
+            List<IVariable> values = Values;
+
+            foreach (var pair in bounds.Zip(values, (first, second) => (first, second)))
+            {
+                pair.first.UpdateValue(copyStorage, pair.second.value);
+            }
+            */
         }
     }
 
@@ -28,51 +67,26 @@ namespace LOGQ
     {
         // List potentially can be replaced with some kind of sorted table of values
         // But that must not be an overkill as program can't check (now at least) if only suitable result is sought
-        private Dictionary<Type, List<FactTemplate>> facts = new Dictionary<Type, List<FactTemplate>>();
+        private Dictionary<Type, List<Fact>> facts = new Dictionary<Type, List<Fact>>();
         private Dictionary<Type, List<Rule>> rules = new Dictionary<Type, List<Rule>>();
 
         // TODO: Option to add a rule-query for checking of fact existence by rule
         // Rule-based queries must get own iteration LAction and build in as LAction on some values somehow
 
-        // Check for facts must remember about it comparing fact variables, but setting bind keys
-        private void BindFact<T>(BoundFact<T> sampleFact, FactTemplate fact, Dictionary<BindKey, string> copyStorage) where T : new()
+        public List<Predicate<List<IBound>>> CheckForFacts(BoundFact sampleFact)
         {
-            // Binds fact variables to samples bounds
+            List<Predicate<List<IBound>>> factCheckPredicates =
+                new List<Predicate<List<IBound>>>();
 
-            List<BindKey> bounds = sampleFact.Bounds;
-            List<FactVariable> values = fact.Values.Values.ToList();
-
-            foreach (var pair in bounds.Zip(values, (first, second) => (first, second)))
-            {
-                pair.first.UpdateValue(copyStorage, pair.second.value);
-            }
-        }
-
-        private void BindRule<T>(BoundRule<T> rule, Dictionary<BindKey, string> copyStorage) where T : new()
-        {
-            List<BindKey> bounds = rule.Bounds;
-            List<RuleVariable> values = rule.Values.Values.ToList();
-
-            foreach (var pair in bounds.Zip(values, (first, second) => (first, second)))
-            {
-                pair.first.UpdateValue(copyStorage, pair.second.value);
-            }
-        }
-
-        public List<Predicate<Dictionary<BindKey, string>>> CheckForFacts<T>(BoundFact<T> sampleFact) where T: new()
-        {
-            List<Predicate<Dictionary<BindKey, string>>> factCheckPredicates =
-                new List<Predicate<Dictionary<BindKey, string>>>();
-
-            Type factType = typeof(Fact<T>);
+            Type factType = sampleFact.FactType();
 
             if (facts.ContainsKey(factType))
             {
-                foreach (FactTemplate fact in facts[factType])
+                foreach (Fact fact in facts[factType])
                 {
                     factCheckPredicates.Add(context =>
                     {
-                        BindFact(sampleFact, fact, context);
+                        sampleFact.Bind(fact, context);
                         return (sampleFact == fact);
                     });
                 }
@@ -81,12 +95,14 @@ namespace LOGQ
             return factCheckPredicates;
         }
 
-        public List<Predicate<Dictionary<BindKey, string>>> CheckForRules<T>(BoundRule<T> ruleHead) where T : new()
+        public List<Predicate<List<IBound>>> CheckForRules(BoundRule ruleHead)
         {
-            List<Predicate<Dictionary<BindKey, string>>> ruleCheckPredicates =
-                new List<Predicate<Dictionary<BindKey, string>>>();
+            List<Predicate<List<IBound>>> ruleCheckPredicates =
+                new List<Predicate<List<IBound>>>();
 
-            Type domainType = typeof(T);
+            // Get generated type, provide this as a method
+
+            Type domainType = ruleHead.RuleType();
 
             if (rules.ContainsKey(domainType))
             {
@@ -94,9 +110,10 @@ namespace LOGQ
                 {
                     ruleCheckPredicates.Add(context =>
                     {
-                        TypedRule<T> typedRule = (TypedRule<T>)rule;
+                        // rule must have attached query, here must be search by head
+                        var typedRule = rule.GetTyped();
                         bool executionResult = typedRule.Body(ruleHead).Execute();
-                        BindRule(ruleHead, context);
+                        ruleHead.Bind(context);
                         return executionResult;
                     });
                 }
@@ -105,31 +122,31 @@ namespace LOGQ
             return ruleCheckPredicates;
         }
 
-        public void AddFact<T>(T fact) where T: new()
+        public void AddFact(Fact fact)
         {
-            Type factType = typeof(Fact<T>);
+            Type factType = fact.FactType();
             
             if (!facts.ContainsKey(factType))
             {
-                facts.Add(factType, new List<FactTemplate>());
+                facts.Add(factType, new List<Fact>());
             }
 
-            facts[factType].Add(new Fact<T>(fact));
+            facts[factType].Add(fact);
         }
 
         // Rule must specify what kind of condition is needed to conclude fact existence
         // Rules may be defined as query that succeeds only if fact exists
         // As an initial parameters it will recieve fact variables for fact it will try to conclude
-        public void AddRule<T>(TypedRule<T> rule) where T: new()
+        public void AddRule(Rule rule)
         {
-            Type factType = typeof(T);
+            Type ruleType = rule.RuleType(); 
 
-            if (!rules.ContainsKey(factType))
+            if (!rules.ContainsKey(ruleType))
             {
-                rules.Add(factType, new List<Rule>());
+                rules.Add(ruleType, new List<Rule>());
             }
 
-            rules[factType].Add(rule);
+            rules[ruleType].Add(rule);
         }
     }
 }

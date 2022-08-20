@@ -6,8 +6,15 @@ using System.Threading.Tasks;
 
 namespace LOGQ
 {
-    public interface IVariable { }
-    public interface IBound { }
+    public interface IVariable 
+    { 
+    
+    }
+
+    public interface IBound 
+    { 
+        // Bind, Rollback
+    }
 
     public class Variable<T> : IVariable
     {

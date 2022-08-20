@@ -300,12 +300,12 @@ namespace LOGQ
             return AddNode(list, pathDirection);
         }
 
-        private LogicalQuery AddNode<T>(BoundRule<T> rule, KnowledgeBase knowledgeBase, bool pathDirection) where T: new()
+        private LogicalQuery AddNode(BoundRule rule, KnowledgeBase knowledgeBase, bool pathDirection)
         {
             return AddNode(knowledgeBase.CheckForRules(rule), pathDirection);
         }
 
-        private LogicalQuery AddNode<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase, bool pathDirection) where T: new()
+        private LogicalQuery AddNode(BoundFact fact, KnowledgeBase knowledgeBase, bool pathDirection)
         {
             return AddNode(knowledgeBase.CheckForFacts(fact), pathDirection);
         }
@@ -320,22 +320,22 @@ namespace LOGQ
             return AddNode(iterator, true);
         }
 
-        public LogicalQuery With(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
+        public LogicalQuery With(List<Predicate<List<IBound>>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
         }
 
-        public LogicalQuery With(Predicate<Dictionary<BindKey, string>> actionInitializer)
+        public LogicalQuery With(Predicate<List<IBound>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
         }
 
-        public LogicalQuery With<T>(BoundRule<T> rule, KnowledgeBase knowledgeBase) where T : new()
+        public LogicalQuery With(BoundRule rule, KnowledgeBase knowledgeBase)
         {
             return AddNode(rule, knowledgeBase, true);
         }
 
-        public LogicalQuery With<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase) where T: new()
+        public LogicalQuery With(BoundFact fact, KnowledgeBase knowledgeBase)
         {
             return AddNode(fact, knowledgeBase, true);
         }
@@ -362,12 +362,12 @@ namespace LOGQ
             return AddNode(actionInitializer, false);
         }
 
-        public LogicalQuery OrWith<T>(BoundRule<T> rule, KnowledgeBase knowledgeBase) where T : new()
+        public LogicalQuery OrWith(BoundRule rule, KnowledgeBase knowledgeBase)
         {
             return AddNode(rule, knowledgeBase, false);
         }
 
-        public LogicalQuery OrWith<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase) where T: new()
+        public LogicalQuery OrWith(BoundFact fact, KnowledgeBase knowledgeBase)
         {
             return AddNode(fact, knowledgeBase, false);
         }
