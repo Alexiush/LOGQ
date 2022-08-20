@@ -5,16 +5,16 @@ namespace LOGQ
 {
     public class BacktrackIterator
     {
-        private Func<Predicate<Dictionary<BindKey, string>>> generator;
+        private Func<Predicate<List<IBound>>> generator;
         private Action reset;
 
-        public BacktrackIterator(Func<Predicate<Dictionary<BindKey, string>>> generator, Action reset)
+        public BacktrackIterator(Func<Predicate<List<IBound>>> generator, Action reset)
         {
             this.generator = generator;
             this.reset = reset;
         }
 
-        public Predicate<Dictionary<BindKey, string>> GetNext()
+        public Predicate<List<IBound>> GetNext()
         {
             return generator.Invoke();
         }

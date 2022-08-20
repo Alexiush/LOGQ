@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 
 namespace LOGQ
 {
-    class Variable<T>
+    public interface IVariable { }
+    public interface IBound { }
+
+    public class Variable<T> : IVariable
     {
         protected T value;
 
@@ -28,7 +31,7 @@ namespace LOGQ
         }
     }
 
-    class BoundVariable<T> : Variable<T>
+    public class BoundVariable<T> : Variable<T>, IBound
     {
         public BoundVariable() { }
 
@@ -54,7 +57,7 @@ namespace LOGQ
         }
     }
 
-    class IgnorableVariable<T> : Variable<T>
+    public class IgnorableVariable<T> : Variable<T>
     {
         public IgnorableVariable() {}
 
@@ -69,7 +72,7 @@ namespace LOGQ
         }
     }
 
-    class DummyBoundVariable<T> : BoundVariable<T>
+    public class DummyBoundVariable<T> : BoundVariable<T>
     {
         public static bool operator ==(DummyBoundVariable<T> fact, BoundVariable<T> otherFact)
         {
@@ -85,9 +88,9 @@ namespace LOGQ
     // Base class to generate patterns to match rule head (can't be exact values)
     // Like Any, Equals, Unbound, ...
 
-    class RuleVariable<T> : Variable<T> { }
+    public class RuleVariable<T> : Variable<T> { }
 
-    class AnyValue<T> : RuleVariable<T>
+    public class AnyValue<T> : RuleVariable<T>
     {
         public static bool operator ==(AnyValue<T> fact, BoundVariable<T> otherFact)
         {
@@ -100,7 +103,7 @@ namespace LOGQ
         }
     }
 
-    class SameValue<T> : RuleVariable<T>
+    public class SameValue<T> : RuleVariable<T>
     {
         public static bool operator ==(SameValue<T> fact, BoundVariable<T> otherFact)
         {
@@ -114,7 +117,7 @@ namespace LOGQ
         }
     }
 
-    class UnboundValue<T> : RuleVariable<T>
+    public class UnboundValue<T> : RuleVariable<T>
     {
         public static bool operator ==(UnboundValue<T> fact, BoundVariable<T> otherFact)
         {

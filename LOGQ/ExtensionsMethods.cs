@@ -6,17 +6,17 @@ namespace LOGQ.Extensions
 {
     public static class ExtensionsMethods
     {
-        public static LAction Not(List<Predicate<Dictionary<BindKey, string>>> actionsToTry)
+        public static LogicalAction Not(List<Predicate<Dictionary<BindKey, string>>> actionsToTry)
         {
-            return new LAction(actionsToTry
+            return new LogicalAction(actionsToTry
                 .Select<Predicate<Dictionary<BindKey, string>>, Predicate<Dictionary<BindKey, string>>>
                 (predicate => context => !predicate(context)).ToList());
         }
 
-        public static LAction Not(Predicate<Dictionary<BindKey, string>> actionToTry) 
+        public static LogicalAction Not(Predicate<Dictionary<BindKey, string>> actionToTry) 
             => Not(new List<Predicate<Dictionary<BindKey, string>>> { actionToTry });
 
-        public static LAction Not<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase) where T : new()
+        public static LogicalAction Not<T>(BoundFact<T> fact, KnowledgeBase knowledgeBase) where T : new()
             => Not(knowledgeBase.CheckForFacts(fact));
 
         public static FactVariable AnyFact()

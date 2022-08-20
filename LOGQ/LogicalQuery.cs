@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace LOGQ
 {
-    public class LAction
+    public class LogicalAction
     {
         // To get rid of single variant / multiple variants system using queue for both
         
@@ -17,14 +17,14 @@ namespace LOGQ
 
         protected BacktrackIterator iterator;
 
-        protected LAction() { }
+        protected LogicalAction() { }
 
-        internal LAction(BacktrackIterator iterator)
+        internal LogicalAction(BacktrackIterator iterator)
         {
             this.iterator = iterator;
         }
 
-        internal LAction(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
+        internal LogicalAction(List<Predicate<List<IBound>>> actionInitializer)
         {
             int offset = 0;
 
@@ -36,7 +36,7 @@ namespace LOGQ
                         return null;
                     }
 
-                    Predicate<Dictionary<BindKey, string>> predicate =
+                    Predicate<List<IBound>> predicate =
                         actionInitializer[offset];
 
                     offset++;
@@ -51,14 +51,14 @@ namespace LOGQ
 
         // Now Bounds themselves control their values history
         // So it must be replaced with a hashset or list (multiple changes)
-        public Dictionary<BindKey, string> boundsCopy = new Dictionary<BindKey, string>();
+        public List<IBound> boundsCopy = new List<IBound>();
 
         // That means Reset bounds calls for Rollback for each bound in the list
         protected void ResetBounds()
         {
-            foreach (KeyValuePair<BindKey, string> boundCopy in boundsCopy)
+            foreach (IBound boundCopy in boundsCopy)
             {
-                boundCopy.Key.UpdateValue(boundsCopy, boundCopy.Value);
+                boundCopy.Rollback();
             }
         }
 
@@ -72,7 +72,7 @@ namespace LOGQ
 
         public virtual bool GetNext()
         {
-            Predicate<Dictionary<BindKey, string>> predicate = iterator.GetNext(); 
+            Predicate<List<IBound>> predicate = iterator.GetNext(); 
 
             while (predicate != null)
             {
@@ -123,7 +123,7 @@ namespace LOGQ
             {
                 public Node parent;
 
-                public LAction boundAction;
+                public LogicalAction boundAction;
 
                 public Node nextOnTrue;
                 public Node nextOnFalse;
@@ -134,7 +134,7 @@ namespace LOGQ
 
                 public Node() { }
 
-                public Node(LAction boundAction, Node parent, Node localRoot)
+                public Node(LogicalAction boundAction, Node parent, Node localRoot)
                 {
                     this.boundAction = boundAction;
                     this.parent = parent;
@@ -172,7 +172,7 @@ namespace LOGQ
                 rootLocal = newLocalRoot;
             }
 
-            public void Add(LAction action)
+            public void Add(LogicalAction action)
             {
                 Node newNode = new Node(action, currentNode, rootLocal);
 
@@ -186,7 +186,7 @@ namespace LOGQ
                 currentNode = newNode;
             }
 
-            public void AddFalse(LAction action)
+            public void AddFalse(LogicalAction action)
             {
                 Node newNode = new Node(action, rootLocal, rootLocal);
 
@@ -269,7 +269,7 @@ namespace LOGQ
             tree = new QueryTree(this);
         }
 
-        private LogicalQuery AddNode(LAction action, bool pathDirection)
+        private LogicalQuery AddNode(LogicalAction action, bool pathDirection)
         {
             if (pathDirection)
             {
@@ -284,18 +284,18 @@ namespace LOGQ
 
         private LogicalQuery AddNode(BacktrackIterator iterator, bool pathDirection)
         {
-            return AddNode(new LAction(iterator), pathDirection);
+            return AddNode(new LogicalAction(iterator), pathDirection);
         }
 
-        private LogicalQuery AddNode(List<Predicate<Dictionary<BindKey, string>>> actionInitializer, bool pathDirection)
+        private LogicalQuery AddNode(List<Predicate<List<IBound>>> actionInitializer, bool pathDirection)
         {
-            return AddNode(new LAction(actionInitializer), pathDirection);
+            return AddNode(new LogicalAction(actionInitializer), pathDirection);
         }
 
-        private LogicalQuery AddNode(Predicate<Dictionary<BindKey, string>> actionInitializer, bool pathDirection)
+        private LogicalQuery AddNode(Predicate<List<IBound>> actionInitializer, bool pathDirection)
         {
-            List<Predicate<Dictionary<BindKey, string>>> list =
-                new List<Predicate<Dictionary<BindKey, string>>>(new[] { actionInitializer });
+            List<Predicate<List<IBound>>> list =
+                new List<Predicate<List<IBound>>>(new[] { actionInitializer });
 
             return AddNode(list, pathDirection);
         }
@@ -310,7 +310,7 @@ namespace LOGQ
             return AddNode(knowledgeBase.CheckForFacts(fact), pathDirection);
         }
 
-        public LogicalQuery With(LAction action)
+        public LogicalQuery With(LogicalAction action)
         {
             return AddNode(action, true);
         }
@@ -342,7 +342,7 @@ namespace LOGQ
 
         // Adds false path
         // Must be some way to restrict multiple OrWith in the same scope as it is just erroneous behaviour
-        public LogicalQuery OrWith(LAction action)
+        public LogicalQuery OrWith(LogicalAction action)
         {
             return AddNode(action, false);
         }
@@ -352,12 +352,12 @@ namespace LOGQ
             return AddNode(iterator, false);
         }
 
-        public LogicalQuery OrWith(List<Predicate<Dictionary<BindKey, string>>> actionInitializer)
+        public LogicalQuery OrWith(List<Predicate<List<IBound>>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
         }
 
-        public LogicalQuery OrWith(Predicate<Dictionary<BindKey, string>> actionInitializer)
+        public LogicalQuery OrWith(Predicate<List<IBound>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
         }
@@ -416,7 +416,7 @@ namespace LOGQ
 
         // Maybe there is a place for not
 
-        private void ContextRollback(LAction action)
+        private void ContextRollback(LogicalAction action)
         {
             action.Rollback();
         }
