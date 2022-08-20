@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>LOGQ</RootNamespace>
     <AssemblyName>LOGQ</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
@@ -38,9 +38,9 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="LOGQ Source Generation">
-      <HintPath>..\..\LOGQ Source Generation\LOGQ Source Generation\bin\Debug\netstandard2.0\LOGQ Source Generation.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\LOGQ Source Generation\LOGQ Source Generation\LOGQ Source Generation.csproj"
+		OutputItemType="Analyzer"
+		ReferenceOutputAssembly="false"/>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -50,7 +50,6 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
