@@ -12,13 +12,15 @@ namespace LOGQ
     }
 
     public interface IBound 
-    { 
+    {
         // Bind, Rollback
+
+        public void Rollback();
     }
 
     public class Variable<T> : IVariable
     {
-        protected T value;
+        public T value;
 
         internal Variable() {}
 
@@ -61,6 +63,16 @@ namespace LOGQ
 
             copies.Push(value);
             this.value = value;
+        }
+
+        public void Rollback()
+        {
+            copies.Pop();
+
+            if (copies.Count > 0)
+            {
+                value = copies.Peek();
+            }
         }
     }
 
@@ -115,7 +127,7 @@ namespace LOGQ
         public static bool operator ==(SameValue<T> fact, BoundVariable<T> otherFact)
         {
             // make value seen somehow
-            return fact.value == otherFact.value;
+            return fact.value.Equals(otherFact.value);
         }
 
         public static bool operator !=(SameValue<T> fact, BoundVariable<T> otherFact)

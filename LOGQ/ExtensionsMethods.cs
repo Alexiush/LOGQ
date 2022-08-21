@@ -16,8 +16,8 @@ namespace LOGQ.Extensions
         public static LogicalAction Not(Predicate<List<IBound>> actionToTry) 
             => Not(new List<Predicate<List<IBound>>> { actionToTry });
 
-        public static LogicalAction Not<T>(BoundFact fact, KnowledgeBase knowledgeBase) where T : new()
-            => Not(knowledgeBase.CheckForFacts<T>(fact));
+        public static LogicalAction Not(BoundFact fact, KnowledgeBase knowledgeBase)
+            => Not(knowledgeBase.CheckForFacts(fact));
 
         /*
         public static FactVariable AnyFact()

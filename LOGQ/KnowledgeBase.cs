@@ -110,11 +110,15 @@ namespace LOGQ
                 {
                     ruleCheckPredicates.Add(context =>
                     {
+                        /*
                         // rule must have attached query, here must be search by head
                         var typedRule = rule.GetTyped();
                         bool executionResult = typedRule.Body(ruleHead).Execute();
                         ruleHead.Bind(context);
                         return executionResult;
+                        */
+
+                        return true;
                     });
                 }
             }

@@ -1,9 +1,13 @@
 ﻿using System.Collections.Generic;
-using LOGQ_Source_Generation;
 using static LOGQ.Extensions.ExtensionsMethods;
 
 namespace LOGQ
 {
+    public class Bound
+    {
+
+    }
+
     /*
     // Create Generic based BindKey
     
