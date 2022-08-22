@@ -6,6 +6,10 @@
 	<LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
+	<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>D:\c sharp repos\LOGicalQuery\Generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <PropertyGroup>

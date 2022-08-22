@@ -4,63 +4,25 @@ using System.Linq;
 
 namespace LOGQ
 {
-    public class Fact 
+    public abstract class Fact 
     {
-        public List<IVariable> Values;
-
-        public virtual Type FactType()
-        {
-            return GetType();
-        }
+        abstract public Type FactType();
     }
 
-    public class BoundFact : Fact 
+    public abstract class BoundFact : Fact 
     {
-        public List<IBound> Bounds;
-
         // Check for facts must remember about it comparing fact variables, but setting bind keys
-        public void Bind(Fact fact, List<IBound> copyStorage)
-        {
-            // Binds fact variables to samples bounds
-
-            /*
-            List<IBound> bounds = Bounds;
-            List<IVariable> values = fact.Values;
-
-            foreach (var pair in bounds.Zip(values, (first, second) => (first, second)))
-            {
-                pair.first.UpdateValue(copyStorage, pair.second.value);
-            }
-            */
-        }
+        abstract public void Bind(Fact fact, List<IBound> copyStorage);
     }
 
-    public class Rule 
+    public abstract class Rule 
     {
-        public List<IVariable> Values;
-
-        public virtual Type RuleType() 
-        { 
-            return GetType(); 
-        }
+        abstract public Type RuleType();
     }
 
-    public class BoundRule : Rule
+    public abstract class BoundRule : Rule
     {
-        public List<IBound> Bounds;
-
-        public void Bind(List<IBound> copyStorage)
-        {
-            /*
-            List<IBound> bounds = Bounds;
-            List<IVariable> values = Values;
-
-            foreach (var pair in bounds.Zip(values, (first, second) => (first, second)))
-            {
-                pair.first.UpdateValue(copyStorage, pair.second.value);
-            }
-            */
-        }
+        abstract public void Bind(List<IBound> copyStorage);
     }
 
     public class KnowledgeBase
@@ -86,8 +48,9 @@ namespace LOGQ
                 {
                     factCheckPredicates.Add(context =>
                     {
+                        bool comparisonResult = sampleFact.Equals(fact);
                         sampleFact.Bind(fact, context);
-                        return (sampleFact == fact);
+                        return comparisonResult;
                     });
                 }
             }

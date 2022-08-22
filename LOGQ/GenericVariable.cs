@@ -6,15 +6,10 @@ using System.Threading.Tasks;
 
 namespace LOGQ
 {
-    public interface IVariable 
-    { 
-    
-    }
+    public interface IVariable { }
 
     public interface IBound 
     {
-        // Bind, Rollback
-
         public void Rollback();
     }
 
@@ -38,6 +33,18 @@ namespace LOGQ
         {
             return !(fact == otherFact);
         }
+
+        public override bool Equals(object obj)
+        {
+            Variable<T> variable = obj as Variable<T>;
+
+            if (obj is null)
+            {
+                return false;
+            }
+
+            return this == variable;
+        }
     }
 
     public class BoundVariable<T> : Variable<T>, IBound
@@ -54,7 +61,7 @@ namespace LOGQ
 
         public bool IsBound() => copies.Count > 0;
 
-        public void UpdateValue(List<BoundVariable<T>> copyStorage, T value)
+        public void UpdateValue(List<IBound> copyStorage, T value)
         {
             if (!copyStorage.Contains(this))
             {
@@ -93,14 +100,26 @@ namespace LOGQ
 
     public class DummyBoundVariable<T> : BoundVariable<T>
     {
-        public static bool operator ==(DummyBoundVariable<T> fact, BoundVariable<T> otherFact)
+        public static bool operator ==(DummyBoundVariable<T> fact, Variable<T> otherFact)
         {
             return true;
         }
 
-        public static bool operator !=(DummyBoundVariable<T> fact, BoundVariable<T> otherFact)
+        public static bool operator !=(DummyBoundVariable<T> fact, Variable<T> otherFact)
         {
             return false;
+        }
+
+        public override bool Equals(object obj)
+        {
+            Variable<T> variable = obj as Variable<T>;
+
+            if (obj is null)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 
