@@ -25,12 +25,24 @@ namespace LOGQ
         abstract public void Bind(List<IBound> copyStorage);
     }
 
+    public class BaseRule
+    {
+        public Rule head;
+        public Func<BoundRule, LogicalQuery> body;
+
+        public BaseRule(Rule head, Func<BoundRule, LogicalQuery> body)
+        {
+            this.head = head;
+            this.body = body;
+        }
+    }
+
     public class KnowledgeBase
     {
         // List potentially can be replaced with some kind of sorted table of values
         // But that must not be an overkill as program can't check (now at least) if only suitable result is sought
         private Dictionary<Type, List<Fact>> facts = new Dictionary<Type, List<Fact>>();
-        private Dictionary<Type, List<Rule>> rules = new Dictionary<Type, List<Rule>>();
+        private Dictionary<Type, List<BaseRule>> rules = new Dictionary<Type, List<BaseRule>>();
 
         // TODO: Option to add a rule-query for checking of fact existence by rule
         // Rule-based queries must get own iteration LAction and build in as LAction on some values somehow
@@ -65,23 +77,21 @@ namespace LOGQ
 
             // Get generated type, provide this as a method
 
-            Type domainType = ruleHead.RuleType();
+            Type ruleType = ruleHead.RuleType();
 
-            if (rules.ContainsKey(domainType))
+            if (rules.ContainsKey(ruleType))
             {
-                foreach (Rule rule in rules[domainType])
+                foreach (BaseRule rule in rules[ruleType])
                 {
                     ruleCheckPredicates.Add(context =>
                     {
-                        /*
-                        // rule must have attached query, here must be search by head
-                        var typedRule = rule.GetTyped();
-                        bool executionResult = typedRule.Body(ruleHead).Execute();
-                        ruleHead.Bind(context);
-                        return executionResult;
-                        */
+                        if (!rule.head.Equals(ruleHead))
+                        {
+                            return false;
+                        }
 
-                        return true;
+                        //ruleHead.Bind(context);
+                        return rule.body(ruleHead).Execute(); 
                     });
                 }
             }
@@ -104,13 +114,13 @@ namespace LOGQ
         // Rule must specify what kind of condition is needed to conclude fact existence
         // Rules may be defined as query that succeeds only if fact exists
         // As an initial parameters it will recieve fact variables for fact it will try to conclude
-        public void AddRule(Rule rule)
+        public void AddRule(BaseRule rule)
         {
-            Type ruleType = rule.RuleType(); 
+            Type ruleType = rule.head.RuleType();
 
             if (!rules.ContainsKey(ruleType))
             {
-                rules.Add(ruleType, new List<Rule>());
+                rules.Add(ruleType, new List<BaseRule>());
             }
 
             rules[ruleType].Add(rule);

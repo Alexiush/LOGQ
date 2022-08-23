@@ -24,15 +24,16 @@ namespace LOGQ
             this.value = value;
         }
 
+        public static implicit operator Variable<T>(T value)
+            => new Variable<T>(value);
+
         public static bool operator ==(Variable<T> fact, Variable<T> otherFact)
-        {
-            return fact.value.Equals(otherFact.value);
-        }
+            => fact.value.Equals(otherFact.value);
+        
 
         public static bool operator !=(Variable<T> fact, Variable<T> otherFact)
-        {
-            return !(fact == otherFact);
-        }
+            => !(fact == otherFact);
+        
 
         public override bool Equals(object obj)
         {
@@ -55,6 +56,9 @@ namespace LOGQ
         {
             copies.Push(value);
         }
+
+        public static implicit operator BoundVariable<T>(T value)
+            => new BoundVariable<T>(value);
 
         // Considered unbound if stack is empty
         private Stack<T> copies = new Stack<T>();
@@ -139,6 +143,18 @@ namespace LOGQ
         {
             return false;
         }
+
+        public override bool Equals(object obj)
+        {
+            BoundVariable<T> variable = obj as BoundVariable<T>;
+
+            if (obj is null)
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 
     public class SameValue<T> : RuleVariable<T>
@@ -153,6 +169,18 @@ namespace LOGQ
         {
             return !(fact == otherFact);
         }
+
+        public override bool Equals(object obj)
+        {
+            BoundVariable<T> variable = obj as BoundVariable<T>;
+
+            if (obj is null)
+            {
+                return false;
+            }
+
+            return (Variable<T>)value == variable.value;
+        }
     }
 
     public class UnboundValue<T> : RuleVariable<T>
@@ -165,6 +193,18 @@ namespace LOGQ
         public static bool operator !=(UnboundValue<T> fact, BoundVariable<T> otherFact)
         {
             return !(fact == otherFact);
+        }
+
+        public override bool Equals(object obj)
+        {
+            BoundVariable<T> variable = obj as BoundVariable<T>;
+
+            if (obj is null)
+            {
+                return false;
+            }
+
+            return !variable.IsBound();
         }
     }
 }
