@@ -67,19 +67,19 @@ namespace LOGQ
 
         public void UpdateValue(List<IBound> copyStorage, T value)
         {
-            if (!copyStorage.Contains(this))
-            {
-                copyStorage.Add(this);
-            }
-
+            copyStorage.Add(this);
             copies.Push(value);
             this.value = value;
         }
 
         public void Rollback()
         {
-            copies.Pop();
+            if (copies.Count == 0)
+            {
+                throw new ArgumentException("Nothing to rollback");
+            }
 
+            copies.Pop();
             if (copies.Count > 0)
             {
                 value = copies.Peek();

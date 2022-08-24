@@ -60,6 +60,7 @@ namespace LOGQ
             {
                 boundCopy.Rollback();
             }
+            boundsCopy.Clear();
         }
 
         // Rollback must repopulate LAction with values
@@ -146,6 +147,8 @@ namespace LOGQ
             private Node rootGlobal = null;
             private Node rootLocal = null;
 
+            private Node stateNode = null;
+
             public bool Cut()
             {
                 Node pointer = currentNode.parent;
@@ -202,35 +205,43 @@ namespace LOGQ
 
             public bool Execute()
             {
-                currentNode = rootGlobal;
-
-                while (!(currentNode == null))
+                if (stateNode is null)
                 {
-                    if (!currentNode.isHidden)
+                    stateNode = rootGlobal;
+                }
+
+                Node prevNode = stateNode.parent;
+
+                while (!(stateNode == null))
+                {
+                    if (!stateNode.isHidden)
                     {
-                        if (currentNode.boundAction.GetNext())
+                        if (stateNode.boundAction.GetNext())
                         {
-                            currentNode = currentNode.nextOnTrue;
+                            prevNode = stateNode;
+                            stateNode = stateNode.nextOnTrue;
                             continue;
                         }
 
-                        if (currentNode.nextOnFalse != null && !currentNode.wentFalse)
+                        if (stateNode.nextOnFalse != null && !stateNode.wentFalse)
                         {
-                            currentNode.wentFalse = true;
-                            currentNode = currentNode.nextOnFalse;
+                            stateNode.wentFalse = true;
+                            prevNode = stateNode;
+                            stateNode = stateNode.nextOnFalse;
                             continue;
                         }
                     }
 
-                    if (currentNode == rootGlobal)
+                    if (stateNode == rootGlobal)
                     {
                         return false;
                     }
 
-                    query.ContextRollback(currentNode.boundAction);
-                    currentNode = currentNode.parent;
+                    query.ContextRollback(stateNode.boundAction);
+                    stateNode = stateNode.parent;
                 }
 
+                stateNode = prevNode;
                 return true;
             }
 
@@ -251,6 +262,7 @@ namespace LOGQ
 
             public void Reset()
             {
+                stateNode = null;
                 ResetNode(rootGlobal);
             }
         }
@@ -421,7 +433,7 @@ namespace LOGQ
             action.Rollback();
         }
 
-        private void Reset()
+        public void Reset()
         {
             tree.Reset();
         }

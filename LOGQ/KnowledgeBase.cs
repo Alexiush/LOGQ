@@ -70,33 +70,53 @@ namespace LOGQ
             return factCheckPredicates;
         }
 
-        public List<Predicate<List<IBound>>> CheckForRules(BoundRule ruleHead)
+        public BacktrackIterator CheckForRules(BoundRule ruleHead)
         {
-            List<Predicate<List<IBound>>> ruleCheckPredicates =
-                new List<Predicate<List<IBound>>>();
-
             // Get generated type, provide this as a method
 
             Type ruleType = ruleHead.RuleType();
 
             if (rules.ContainsKey(ruleType))
             {
-                foreach (BaseRule rule in rules[ruleType])
-                {
-                    ruleCheckPredicates.Add(context =>
-                    {
-                        if (!rule.head.Equals(ruleHead))
+                List<BaseRule> baseRules = rules[ruleType].Where(rule => rule.head.Equals(ruleHead)).ToList();
+                LogicalQuery innerQuery = null;
+                int offset = 0;
+
+                return new BacktrackIterator
+                (
+                    () => {
+                        while (true)
                         {
-                            return false;
+                            if (offset == baseRules.Count)
+                            {
+                                return null;
+                            }
+
+                            if (innerQuery is null)
+                            {
+                                innerQuery = baseRules[offset].body(ruleHead);
+                            }
+
+                            bool result = innerQuery.Execute();
+
+                            if (!result)
+                            {
+                                offset++;
+                                innerQuery.Reset();
+                                innerQuery = null;
+                                continue;
+                            }
+
+                            return context => result;
                         }
-
-                        //ruleHead.Bind(context);
-                        return rule.body(ruleHead).Execute(); 
-                    });
-                }
+                    },
+                    () => { offset = 0;}
+                );
             }
-
-            return ruleCheckPredicates;
+            else
+            {
+                throw new ArgumentException("No rules of that type");
+            }
         }
 
         public void AddFact(Fact fact)
