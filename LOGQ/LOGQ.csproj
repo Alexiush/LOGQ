@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
 	<LangVersion>latest</LangVersion>
@@ -19,6 +19,9 @@
     <ProjectReference Include="D:\c sharp repos\LOGicalQuery\LOGQ Source Generation\LOGQ Source Generation\LOGQ Source Generation.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="LOGQ Source Generation">
+      <HintPath>..\..\LOGQ Source Generation\LOGQ Source Generation\bin\Debug\netstandard2.0\LOGQ Source Generation.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />

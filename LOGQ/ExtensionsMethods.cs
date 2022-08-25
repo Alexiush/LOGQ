@@ -16,8 +16,16 @@ namespace LOGQ.Extensions
         public static LogicalAction Not(Predicate<List<IBound>> actionToTry) 
             => Not(new List<Predicate<List<IBound>>> { actionToTry });
 
+        public static LogicalAction Not(BacktrackIterator iterator)
+        {
+            return new LogicalAction(iterator.Negate());
+        }
+
         public static LogicalAction Not(BoundFact fact, KnowledgeBase knowledgeBase)
             => Not(knowledgeBase.CheckForFacts(fact));
+
+        public static LogicalAction Not(BoundRule rule, KnowledgeBase knowledgeBase)
+            => Not(knowledgeBase.CheckForRules(rule));
 
         /*
         public static FactVariable AnyFact()

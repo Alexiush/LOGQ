@@ -14,6 +14,16 @@ namespace LOGQ
             this.reset = reset;
         }
 
+        internal BacktrackIterator Negate()
+        {
+            return new BacktrackIterator(() =>
+            {
+                Predicate<List<IBound>> result = generator();
+                return result is null ? null : context => !result(context);
+            },
+            reset);
+        }
+
         public Predicate<List<IBound>> GetNext()
         {
             return generator.Invoke();

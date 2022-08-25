@@ -104,6 +104,7 @@ namespace LOGQ
                                 offset++;
                                 innerQuery.Reset();
                                 innerQuery = null;
+                                // Proof for rule inexistence - false for all rules, not once
                                 continue;
                             }
 
