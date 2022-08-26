@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace LOGQ
 {
@@ -276,9 +277,11 @@ namespace LOGQ
             _tree = new QueryTree(this);
         }
 
-        public void End()
+        public LogicalQuery End()
         {
             _finishedBuilding = true;
+
+            return this;
         }
 
         private void CheckIfCanBuild()
@@ -338,7 +341,7 @@ namespace LOGQ
         }
 
         public LogicalQuery With(BacktrackIterator iterator)
-        {
+        { 
             return AddNode(iterator, true);
         }
 
@@ -455,7 +458,6 @@ namespace LOGQ
         public bool Execute()
         {
             End();
-
             return _tree.Execute();
         }
     }

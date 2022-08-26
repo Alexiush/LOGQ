@@ -6,27 +6,22 @@ namespace LOGQ
 {
     public abstract class Fact 
     {
-        private protected Fact() { }
         abstract public Type FactType();
     }
 
     public abstract class BoundFact : Fact 
     {
-        private protected BoundFact() { }
-
         // Check for facts must remember about it comparing fact variables, but setting bind keys
         abstract public void Bind(Fact fact, List<IBound> copyStorage);
     }
 
     public abstract class Rule 
     {
-        private protected Rule() { }
         abstract public Type RuleType();
     }
 
     public abstract class BoundRule : Rule
     {
-        private protected BoundRule() { }
         abstract public void Bind(List<IBound> copyStorage);
     }
 
