@@ -26,23 +26,5 @@ namespace LOGQ.Extensions
 
         public static LogicalAction Not(BoundRule rule, KnowledgeBase knowledgeBase)
             => Not(knowledgeBase.CheckForRules(rule));
-
-        /*
-        public static FactVariable AnyFact()
-        {
-            FactVariable anyValue = new FactVariable("");
-            anyValue.MakeIgnorant();
-
-            return anyValue;
-        }
-
-        public static RuleVariable AnyRule()
-        {
-            RuleVariable anyValue = new RuleVariable("");
-            anyValue.MakeIgnorant();
-
-            return anyValue;
-        }
-        */
     }
 }

@@ -15,20 +15,20 @@ namespace LOGQ
         //  - Lists are just pointers to list instantiated elsewhere
         //  - Passing list of actions still requires lots of code, creating GetNext function won't be much harder
 
-        protected BacktrackIterator iterator;
+        protected BacktrackIterator _iterator;
 
-        protected LogicalAction() { }
+        internal LogicalAction() { }
 
         internal LogicalAction(BacktrackIterator iterator)
         {
-            this.iterator = iterator;
+            this._iterator = iterator;
         }
 
         internal LogicalAction(List<Predicate<List<IBound>>> actionInitializer)
         {
             int offset = 0;
 
-            iterator = new BacktrackIterator(
+            _iterator = new BacktrackIterator(
                 () =>
                 {
                     if (offset >= actionInitializer.Count)
@@ -51,16 +51,16 @@ namespace LOGQ
 
         // Now Bounds themselves control their values history
         // So it must be replaced with a hashset or list (multiple changes)
-        public List<IBound> boundsCopy = new List<IBound>();
+        public List<IBound> _boundsCopy = new List<IBound>();
 
         // That means Reset bounds calls for Rollback for each bound in the list
         protected void ResetBounds()
         {
-            foreach (IBound boundCopy in boundsCopy)
+            foreach (IBound boundCopy in _boundsCopy)
             {
                 boundCopy.Rollback();
             }
-            boundsCopy.Clear();
+            _boundsCopy.Clear();
         }
 
         // Rollback must repopulate LAction with values
@@ -68,16 +68,16 @@ namespace LOGQ
         public void Rollback()
         {
             ResetBounds();
-            iterator.Reset();
+            _iterator.Reset();
         }
 
         public virtual bool GetNext()
         {
-            Predicate<List<IBound>> predicate = iterator.GetNext(); 
+            Predicate<List<IBound>> predicate = _iterator.GetNext(); 
 
             while (predicate != null)
             {
-                if (predicate.Invoke(boundsCopy))
+                if (predicate.Invoke(_boundsCopy))
                 {
                     // Bounds for good approach are saved
                     return true;
@@ -85,7 +85,7 @@ namespace LOGQ
 
                 // Bounds for bad approach are turned back
                 ResetBounds();
-                predicate = iterator.GetNext();
+                predicate = _iterator.GetNext();
             }
 
             return false;
@@ -110,6 +110,7 @@ namespace LOGQ
         // Possibly need to add tree builder (As it's available only in this class it's pretty encapsulated)
         // Tree might not be modified from outside by means of Add (Cut is allowed)
         // So it can be rewritten with two states
+
         class QueryTree
         {
             // to pass context
@@ -267,29 +268,28 @@ namespace LOGQ
             }
         }
 
-        private QueryTree tree;
-
-        // Any templated logical queries are running inside other queries
-        // So either templated or just scoped they can utilize this constructor
-        public LogicalQuery(LogicalQuery outerScope)
-        {
-            tree = new QueryTree(this);
-        }
+        private QueryTree _tree;
+        private bool _finishedBuilding = false;
 
         public LogicalQuery() 
         {
-            tree = new QueryTree(this);
+            _tree = new QueryTree(this);
+        }
+
+        public void End()
+        {
+            _finishedBuilding = true;
         }
 
         private LogicalQuery AddNode(LogicalAction action, bool pathDirection)
         {
             if (pathDirection)
             {
-                tree.Add(action);
+                _tree.Add(action);
             }
             else
             {
-                tree.AddFalse(action);
+                _tree.AddFalse(action);
             }
             return this;
         }
@@ -385,7 +385,7 @@ namespace LOGQ
         }
 
         // Scopes out - performs all actions inside as a subquery - inits with context of origin, performs all actions and proceeds
-        public LogicalQuery Scope(LogicalQuery innerQuery)
+        public LogicalQuery WithScoped(LogicalQuery innerQuery)
         {
             // as it must be possible to create templated query 
             // both action of creation and action of work must be encapsulated here
@@ -399,7 +399,7 @@ namespace LOGQ
                     }
 
                     metTerminalCondition = !innerQuery.Execute();
-                    return context => !metTerminalCondition;
+                    return copyStorage => !metTerminalCondition;
                 },
                 () => {
                     innerQuery.Reset();
@@ -418,15 +418,13 @@ namespace LOGQ
             // Must restructure one path - if after cut everything turns out bad - false path must be considered too
             
             bool madeCut = false;
-            return With(context =>  madeCut ? madeCut : tree.Cut());
+            return With(copyStorage =>  madeCut ? madeCut : _tree.Cut());
         }
 
         public LogicalQuery Fail()
         {
-            return With(context => false);
+            return With(copyStorage => false);
         }
-
-        // Maybe there is a place for not
 
         private void ContextRollback(LogicalAction action)
         {
@@ -435,12 +433,12 @@ namespace LOGQ
 
         public void Reset()
         {
-            tree.Reset();
+            _tree.Reset();
         }
 
         public bool Execute()
         {
-            return tree.Execute();
+            return _tree.Execute();
         }
     }
 }

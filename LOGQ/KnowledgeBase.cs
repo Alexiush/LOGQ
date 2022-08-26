@@ -6,46 +6,48 @@ namespace LOGQ
 {
     public abstract class Fact 
     {
+        private protected Fact() { }
         abstract public Type FactType();
     }
 
     public abstract class BoundFact : Fact 
     {
+        private protected BoundFact() { }
+
         // Check for facts must remember about it comparing fact variables, but setting bind keys
         abstract public void Bind(Fact fact, List<IBound> copyStorage);
     }
 
     public abstract class Rule 
     {
+        private protected Rule() { }
         abstract public Type RuleType();
     }
 
     public abstract class BoundRule : Rule
     {
+        private protected BoundRule() { }
         abstract public void Bind(List<IBound> copyStorage);
     }
 
-    public class BaseRule
+    public sealed class RuleWithBody
     {
-        public Rule head;
-        public Func<BoundRule, LogicalQuery> body;
+        public Rule Head { get; private set; }
+        public Func<BoundRule, LogicalQuery> Body { get; private set; }
 
-        public BaseRule(Rule head, Func<BoundRule, LogicalQuery> body)
+        public RuleWithBody(Rule head, Func<BoundRule, LogicalQuery> body)
         {
-            this.head = head;
-            this.body = body;
+            this.Head = head;
+            this.Body = body;
         }
     }
 
-    public class KnowledgeBase
+    public sealed class KnowledgeBase
     {
         // List potentially can be replaced with some kind of sorted table of values
         // But that must not be an overkill as program can't check (now at least) if only suitable result is sought
-        private Dictionary<Type, List<Fact>> facts = new Dictionary<Type, List<Fact>>();
-        private Dictionary<Type, List<BaseRule>> rules = new Dictionary<Type, List<BaseRule>>();
-
-        // TODO: Option to add a rule-query for checking of fact existence by rule
-        // Rule-based queries must get own iteration LAction and build in as LAction on some values somehow
+        private Dictionary<Type, List<Fact>> _facts = new Dictionary<Type, List<Fact>>();
+        private Dictionary<Type, List<RuleWithBody>> _rules = new Dictionary<Type, List<RuleWithBody>>();
 
         public List<Predicate<List<IBound>>> CheckForFacts(BoundFact sampleFact)
         {
@@ -54,14 +56,14 @@ namespace LOGQ
 
             Type factType = sampleFact.FactType();
 
-            if (facts.ContainsKey(factType))
+            if (_facts.ContainsKey(factType))
             {
-                foreach (Fact fact in facts[factType])
+                foreach (Fact fact in _facts[factType])
                 {
-                    factCheckPredicates.Add(context =>
+                    factCheckPredicates.Add(copyStorage =>
                     {
                         bool comparisonResult = sampleFact.Equals(fact);
-                        sampleFact.Bind(fact, context);
+                        sampleFact.Bind(fact, copyStorage);
                         return comparisonResult;
                     });
                 }
@@ -76,9 +78,9 @@ namespace LOGQ
 
             Type ruleType = ruleHead.RuleType();
 
-            if (rules.ContainsKey(ruleType))
+            if (_rules.ContainsKey(ruleType))
             {
-                List<BaseRule> baseRules = rules[ruleType].Where(rule => rule.head.Equals(ruleHead)).ToList();
+                List<RuleWithBody> baseRules = _rules[ruleType].Where(rule => rule.Head.Equals(ruleHead)).ToList();
                 LogicalQuery innerQuery = null;
                 int offset = 0;
 
@@ -94,7 +96,7 @@ namespace LOGQ
 
                             if (innerQuery is null)
                             {
-                                innerQuery = baseRules[offset].body(ruleHead);
+                                innerQuery = baseRules[offset].Body(ruleHead);
                             }
 
                             bool result = innerQuery.Execute();
@@ -108,7 +110,7 @@ namespace LOGQ
                                 continue;
                             }
 
-                            return context => result;
+                            return copyStorage => result;
                         }
                     },
                     () => { offset = 0;}
@@ -120,31 +122,31 @@ namespace LOGQ
             }
         }
 
-        public void AddFact(Fact fact)
+        public void DeclareFact(Fact fact)
         {
             Type factType = fact.FactType();
             
-            if (!facts.ContainsKey(factType))
+            if (!_facts.ContainsKey(factType))
             {
-                facts.Add(factType, new List<Fact>());
+                _facts.Add(factType, new List<Fact>());
             }
 
-            facts[factType].Add(fact);
+            _facts[factType].Add(fact);
         }
 
         // Rule must specify what kind of condition is needed to conclude fact existence
         // Rules may be defined as query that succeeds only if fact exists
         // As an initial parameters it will recieve fact variables for fact it will try to conclude
-        public void AddRule(BaseRule rule)
+        public void DeclareRule(RuleWithBody rule)
         {
-            Type ruleType = rule.head.RuleType();
+            Type ruleType = rule.Head.RuleType();
 
-            if (!rules.ContainsKey(ruleType))
+            if (!_rules.ContainsKey(ruleType))
             {
-                rules.Add(ruleType, new List<BaseRule>());
+                _rules.Add(ruleType, new List<RuleWithBody>());
             }
 
-            rules[ruleType].Add(rule);
+            _rules[ruleType].Add(rule);
         }
     }
 }

@@ -15,20 +15,20 @@ namespace LOGQ
 
     public class Variable<T> : IVariable
     {
-        public T value;
+        public T Value { get; protected set; }
 
         internal Variable() {}
 
         public Variable(T value)
         {
-            this.value = value;
+            this.Value = value;
         }
 
         public static implicit operator Variable<T>(T value)
             => new Variable<T>(value);
 
         public static bool operator ==(Variable<T> fact, Variable<T> otherFact)
-            => fact.value.Equals(otherFact.value);
+            => fact.Value.Equals(otherFact.Value);
         
 
         public static bool operator !=(Variable<T> fact, Variable<T> otherFact)
@@ -50,7 +50,7 @@ namespace LOGQ
 
     public class BoundVariable<T> : Variable<T>, IBound
     {
-        public BoundVariable() { }
+        internal BoundVariable() { }
 
         public BoundVariable(T value) : base(value)
         {
@@ -69,7 +69,7 @@ namespace LOGQ
         {
             copyStorage.Add(this);
             copies.Push(value);
-            this.value = value;
+            Value = value;
         }
 
         public void Rollback()
@@ -82,12 +82,12 @@ namespace LOGQ
             copies.Pop();
             if (copies.Count > 0)
             {
-                value = copies.Peek();
+                Value = copies.Peek();
             }
         }
     }
 
-    public class IgnorableVariable<T> : Variable<T>
+    public sealed class IgnorableVariable<T> : Variable<T>
     {
         public IgnorableVariable() {}
 
@@ -102,8 +102,10 @@ namespace LOGQ
         }
     }
 
-    public class DummyBoundVariable<T> : BoundVariable<T>
+    public sealed class DummyBoundVariable<T> : BoundVariable<T>
     {
+        public DummyBoundVariable() {}
+
         public static bool operator ==(DummyBoundVariable<T> fact, Variable<T> otherFact)
         {
             return true;
@@ -130,9 +132,12 @@ namespace LOGQ
     // Base class to generate patterns to match rule head (can't be exact values)
     // Like Any, Equals, Unbound, ...
 
-    public class RuleVariable<T> : Variable<T> { }
+    public class RuleVariable<T> : Variable<T> 
+    { 
+        public RuleVariable() { }
+    }
 
-    public class AnyValue<T> : RuleVariable<T>
+    public sealed class AnyValue<T> : RuleVariable<T>
     {
         public static bool operator ==(AnyValue<T> fact, BoundVariable<T> otherFact)
         {
@@ -157,12 +162,12 @@ namespace LOGQ
         }
     }
 
-    public class SameValue<T> : RuleVariable<T>
+    public sealed class SameValue<T> : RuleVariable<T>
     {
         public static bool operator ==(SameValue<T> fact, BoundVariable<T> otherFact)
         {
             // make value seen somehow
-            return fact.value.Equals(otherFact.value);
+            return fact.Value.Equals(otherFact.Value);
         }
 
         public static bool operator !=(SameValue<T> fact, BoundVariable<T> otherFact)
@@ -179,11 +184,11 @@ namespace LOGQ
                 return false;
             }
 
-            return (Variable<T>)value == variable.value;
+            return (Variable<T>)Value == variable.Value;
         }
     }
 
-    public class UnboundValue<T> : RuleVariable<T>
+    public sealed class UnboundValue<T> : RuleVariable<T>
     {
         public static bool operator ==(UnboundValue<T> fact, BoundVariable<T> otherFact)
         {
