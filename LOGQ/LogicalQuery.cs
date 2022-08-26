@@ -281,8 +281,18 @@ namespace LOGQ
             _finishedBuilding = true;
         }
 
+        private void CheckIfCanBuild()
+        {
+            if (_finishedBuilding)
+            {
+                throw new InvalidOperationException("Can't modify query that was built already");
+            }
+        }
+
         private LogicalQuery AddNode(LogicalAction action, bool pathDirection)
         {
+            CheckIfCanBuild();
+
             if (pathDirection)
             {
                 _tree.Add(action);
@@ -387,6 +397,8 @@ namespace LOGQ
         // Scopes out - performs all actions inside as a subquery - inits with context of origin, performs all actions and proceeds
         public LogicalQuery WithScoped(LogicalQuery innerQuery)
         {
+            CheckIfCanBuild();
+
             // as it must be possible to create templated query 
             // both action of creation and action of work must be encapsulated here
             bool metTerminalCondition = false;
@@ -410,19 +422,23 @@ namespace LOGQ
 
         public LogicalQuery Cut()
         {
+            CheckIfCanBuild();
+
             // adds layer of one action that always succeeds
             // returns new logical query that has context (previously done actions and it's results)
             // but has no info on previous layers (it's cut and will never get back on)
 
             // so as soon as some root gets succesful and query gets to cut layer - it never goes back
             // Must restructure one path - if after cut everything turns out bad - false path must be considered too
-            
+
             bool madeCut = false;
             return With(copyStorage =>  madeCut ? madeCut : _tree.Cut());
         }
 
         public LogicalQuery Fail()
         {
+            CheckIfCanBuild();
+
             return With(copyStorage => false);
         }
 
@@ -438,6 +454,8 @@ namespace LOGQ
 
         public bool Execute()
         {
+            End();
+
             return _tree.Execute();
         }
     }
