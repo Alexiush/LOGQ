@@ -51,6 +51,8 @@ namespace LOGQ.Generation
                     .Append($"{property.PropertyType}> {property.PropertyName};");
             }
 
+            sb.Append("\n");
+
             // Constructor
 
             sb.Append(@"
@@ -164,6 +166,8 @@ namespace LOGQ.Generation
         public BoundVariable<")
                     .Append($"{property.PropertyType}> {property.PropertyName};");
             }
+
+            sb.Append("\n");
 
             // Constructor
 
@@ -376,6 +380,8 @@ namespace LOGQ.Generation
                     .Append(";\n");
             }
 
+            sb.Append("\n");
+
             // Constructor
 
             sb.Append(@"
@@ -575,6 +581,8 @@ namespace LOGQ.Generation
                     .Append(property.PropertyName)
                     .Append(";\n");
             }
+
+            sb.Append("\n");
 
             // Constructor
 
