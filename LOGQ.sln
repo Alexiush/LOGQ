@@ -5,7 +5,7 @@ VisualStudioVersion = 17.3.32811.315
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LOGQ", "LOGQ\LOGQ.csproj", "{A5EF3F5B-2394-4425-AF16-D31479A315E3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LOGQ Source Generation", "..\LOGQ Source Generation\LOGQ Source Generation\LOGQ Source Generation.csproj", "{583B7434-2F76-4BED-9F88-58E12296765C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LOGQ Source Generation", "LOGQ Source Generation\LOGQ Source Generation\LOGQ Source Generation.csproj", "{D59623DA-37A2-4A42-92B4-232A06E87424}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{A5EF3F5B-2394-4425-AF16-D31479A315E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5EF3F5B-2394-4425-AF16-D31479A315E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5EF3F5B-2394-4425-AF16-D31479A315E3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{583B7434-2F76-4BED-9F88-58E12296765C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{583B7434-2F76-4BED-9F88-58E12296765C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{583B7434-2F76-4BED-9F88-58E12296765C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{583B7434-2F76-4BED-9F88-58E12296765C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D59623DA-37A2-4A42-92B4-232A06E87424}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D59623DA-37A2-4A42-92B4-232A06E87424}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D59623DA-37A2-4A42-92B4-232A06E87424}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D59623DA-37A2-4A42-92B4-232A06E87424}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30523.141
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LOGQ Source Generation", "LOGQ Source Generation\LOGQ Source Generation.csproj", "{D742DE2A-4A0B-4951-B404-5CFC295DF9DA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D742DE2A-4A0B-4951-B404-5CFC295DF9DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D742DE2A-4A0B-4951-B404-5CFC295DF9DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D742DE2A-4A0B-4951-B404-5CFC295DF9DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D742DE2A-4A0B-4951-B404-5CFC295DF9DA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BD046BA8-2187-41AF-8A5A-B541EF54E6A4}
+	EndGlobalSection
+EndGlobal

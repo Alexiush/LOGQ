@@ -16,11 +16,11 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="D:\c sharp repos\LOGicalQuery\LOGQ Source Generation\LOGQ Source Generation\LOGQ Source Generation.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="D:\c sharp repos\LOGicalQuery\LOGQ\LOGQ Source Generation\LOGQ Source Generation\LOGQ Source Generation.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="LOGQ Source Generation">
-      <HintPath>..\..\LOGQ Source Generation\LOGQ Source Generation\bin\Debug\netstandard2.0\LOGQ Source Generation.dll</HintPath>
+      <HintPath>..\..\LOGQ\LOGQ Source Generation\LOGQ Source Generation\bin\Debug\netstandard2.0\LOGQ Source Generation.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
