@@ -134,7 +134,7 @@ namespace LOGQ
 
     public class RuleVariable<T> : Variable<T> 
     { 
-        public RuleVariable() { }
+        private protected RuleVariable() { }
     }
 
     public sealed class AnyValue<T> : RuleVariable<T>
@@ -162,34 +162,18 @@ namespace LOGQ
         }
     }
 
-    public sealed class Equal<T> : RuleVariable<T>
-    {
-        public static bool operator ==(Equal<T> fact, BoundVariable<T> otherFact)
-        {
-            // make value seen somehow
-            return fact.Value.Equals(otherFact.Value);
-        }
-
-        public static bool operator !=(Equal<T> fact, BoundVariable<T> otherFact)
-        {
-            return !(fact == otherFact);
-        }
-
-        public override bool Equals(object obj)
-        {
-            BoundVariable<T> variable = obj as BoundVariable<T>;
-
-            if (obj is null)
-            {
-                return false;
-            }
-
-            return (Variable<T>)Value == variable.Value;
-        }
-    }
-
     public sealed class NotEqual<T> : RuleVariable<T>
     {
+        private protected NotEqual()
+        {
+
+        }
+
+        public NotEqual(T value)
+        {
+            Value = value;
+        }
+
         public static bool operator ==(NotEqual<T> fact, BoundVariable<T> otherFact)
         {
             // make value seen somehow

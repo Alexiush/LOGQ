@@ -207,6 +207,11 @@ namespace LOGQ
 
             public bool Execute()
             {
+                if (rootGlobal is null)
+                {
+                    return true;
+                }
+
                 if (stateNode is null)
                 {
                     stateNode = rootGlobal;
@@ -443,6 +448,13 @@ namespace LOGQ
             CheckIfCanBuild();
 
             return With(copyStorage => false);
+        }
+
+        public LogicalQuery Succeed()
+        {
+            CheckIfCanBuild();
+
+            return With(copyStorage => true);
         }
 
         private void ContextRollback(LogicalAction action)

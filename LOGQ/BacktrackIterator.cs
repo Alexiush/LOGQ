@@ -16,12 +16,24 @@ namespace LOGQ
 
         internal BacktrackIterator Negate()
         {
+            bool foundAnswer = false;
+            LogicalQuery innerQuery = new LogicalQuery().With(this);
+
             return new BacktrackIterator(() =>
             {
-                Predicate<List<IBound>> result = _generator();
-                return result is null ? null : context => !result(context);
+                if (foundAnswer)
+                {
+                    return null;
+                }
+
+                foundAnswer = true;
+                return copyStorage => !innerQuery.Execute();
             },
-            _reset);
+            () =>
+            {
+                foundAnswer = false;
+                innerQuery.Reset();
+            });
         }
 
         public Predicate<List<IBound>> GetNext()
