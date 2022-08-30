@@ -6,21 +6,6 @@ namespace LOGQ_Source_Generation
 {
     public static class SourceGenerationHelper
     {
-        public const string FactAttribute = @"
-namespace LOGQ.Generation
-{
-    [System.AttributeUsage(System.AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    public class FactAttribute : System.Attribute 
-    { 
-        public FactAttribute(string factName)
-        {
-            FactName = factName;
-        }
-
-        public string FactName { get; }
-    }
-}";
-
         // From properties naming conventions to field naming conventions
         private static string PropertyToField(string property)
         {
