@@ -6,16 +6,30 @@ using System.Threading.Tasks;
 
 namespace LOGQ
 {
+    /// <summary>
+    /// Interface that marks variable types
+    /// </summary>
     public interface IVariable { }
 
+    /// <summary>
+    /// Interface that marks bound types
+    /// </summary>
     public interface IBound { public void Rollback(); }
 
+    /// <summary>
+    /// Common variable, used to declare facts
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
     public class Variable<T> : IVariable
     {
         public T Value { get; protected set; }
 
         private protected Variable() {}
 
+        /// <summary>
+        /// Variable of a fact
+        /// </summary>
+        /// <param name="value">Variable value</param>
         public Variable(T value)
         {
             this.Value = value;
@@ -45,6 +59,11 @@ namespace LOGQ
         }
     }
 
+    /// <summary>
+    /// Bound variable represents variables used in queries.
+    /// They are bound to values given to them through actions.
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
     public class BoundVariable<T> : Variable<T>, IBound
     {
         private protected BoundVariable() { }
@@ -60,8 +79,17 @@ namespace LOGQ
         // Considered unbound if stack is empty
         private Stack<T> copies = new Stack<T>();
 
+        /// <summary>
+        /// Checks if bound variable is actually bound to some value
+        /// </summary>
+        /// <returns>True if variable has a value else false</returns>
         public bool IsBound() => copies.Count > 0;
 
+        /// <summary>
+        /// Updates variable value and adds record about change made to the copy storage
+        /// </summary>
+        /// <param name="copyStorage">Copy storage</param>
+        /// <param name="value">New variable value</param>
         public void UpdateValue(List<IBound> copyStorage, T value)
         {
             copyStorage.Add(this);
@@ -69,6 +97,12 @@ namespace LOGQ
             Value = value;
         }
 
+        /// <summary>
+        /// Returns variable to a state one change ago
+        /// </summary>
+        /// <exception cref="ArgumentException">
+        /// When there is no copies left
+        /// </exception>
         public void Rollback()
         {
             if (copies.Count == 0)
@@ -101,6 +135,10 @@ namespace LOGQ
     }
     */
 
+    /// <summary>
+    /// Unbound variable - one to get a value, works as any value when comparing
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
     public sealed class UnboundVariable<T> : BoundVariable<T>
     {
         public UnboundVariable() {}
@@ -128,14 +166,19 @@ namespace LOGQ
         }
     }
 
-    // Base class to generate patterns to match rule head (can't be exact values)
-    // Like Any, NotEqual, Unbound, ...
-
+    /// <summary>
+    /// Base class for rule patterns
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
     public class RuleVariable<T> : Variable<T> 
     { 
         private protected RuleVariable() { }
     }
 
+    /// <summary>
+    /// Accepts any value
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
     public sealed class AnyValue<T> : RuleVariable<T>
     {
         public AnyValue() { }
@@ -163,12 +206,13 @@ namespace LOGQ
         }
     }
 
+    /// <summary>
+    /// Accepts only values that is not equal to it's value
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
     public sealed class NotEqual<T> : RuleVariable<T>
     {
-        private protected NotEqual()
-        {
-
-        }
+        private protected NotEqual() {}
 
         public NotEqual(T value)
         {
@@ -198,6 +242,10 @@ namespace LOGQ
         }
     }
 
+    /// <summary>
+    /// Accepts only unbound variables
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
     public sealed class UnboundValue<T> : RuleVariable<T>
     {
         public static bool operator ==(UnboundValue<T> fact, BoundVariable<T> otherFact)

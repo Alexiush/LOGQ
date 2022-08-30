@@ -4,10 +4,15 @@ using System.Diagnostics;
 
 namespace LOGQ
 {
+    /// <summary>
+    /// Class that represents logical action.
+    /// It's driven by underlying backtrack iterator and provides interface to
+    /// getting and processing predicates passed by iterator and resetting it
+    /// Also manages bounds copy storage and rolls bounds back when backtracked
+    /// </summary>
     public class LogicalAction
     {
         // To get rid of single variant / multiple variants system using interface that iterates through options
-
         protected BacktrackIterator _iterator;
 
         internal LogicalAction() { }
@@ -39,11 +44,6 @@ namespace LOGQ
             ); 
         }
 
-        // Each changed bound variable saves it's state before the change happens
-        // at rollback or values are restored
-
-        // Now Bounds themselves control their values history
-        // So it must be replaced with a list (not set because of possible multiple changes)
         public List<IBound> _boundsCopy = new List<IBound>();
 
         // That means Reset bounds calls for Rollback for each bound in the list
@@ -55,8 +55,6 @@ namespace LOGQ
             }
             _boundsCopy.Clear();
         }
-
-        // Rollback must repopulate LogicalAction with values
 
         public void Rollback()
         {
@@ -85,12 +83,18 @@ namespace LOGQ
         }
     }
 
-
-    // Logical query contains all actions
-    // Fluent-style query functions used to update query
-
-    // That's said query is a lazy object
-    // As it's unknown when it's build stops query will have an execute method
+    /// <summary>
+    /// Class that represents logical query.
+    /// 
+    /// It uses fluent design - each method returns query, but in another state.
+    /// It builds on execution or with End() method.
+    /// 
+    /// Uses query tree on which performs DFS driven by logical actions.
+    /// When logical action is true it proceeds to the next logical action, otherwise it gets backtracked.
+    /// If query does not get to the leaf with true it switches to another branch.
+    /// If no branch is true query ends with false;
+    /// Query can be used multiple times.
+    /// </summary>
     public class LogicalQuery
     {
         class QueryTree
@@ -257,11 +261,19 @@ namespace LOGQ
         private QueryTree _tree;
         private bool _finishedBuilding = false;
 
+        /// <summary>
+        /// Creates empty query.
+        /// Empty query is always true.
+        /// </summary>
         public LogicalQuery() 
         {
             _tree = new QueryTree(this);
         }
 
+        /// <summary>
+        /// Marks query as finished to prevent it's mutation
+        /// </summary>
+        /// <returns></returns>
         public LogicalQuery End()
         {
             _finishedBuilding = true;
@@ -320,75 +332,140 @@ namespace LOGQ
             return AddNode(knowledgeBase.CheckForFacts(fact), pathDirection);
         }
 
+        /// <summary>
+        /// Adds logical action
+        /// </summary>
+        /// <param name="action">Logical action</param>
+        /// <returns>Modified Logical query</returns>
         public LogicalQuery With(LogicalAction action)
         {
             return AddNode(action, true);
         }
 
+        /// <summary>
+        /// Adds action based on backtrack iterator
+        /// </summary>
+        /// <param name="iterator">Iterator used to create an action</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery With(BacktrackIterator iterator)
         { 
             return AddNode(iterator, true);
         }
 
+        /// <summary>
+        /// Adds action based on list of predicates
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery With(List<Predicate<List<IBound>>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
         }
 
+        /// <summary>
+        /// Adds action based on predicate
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery With(Predicate<List<IBound>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
         }
 
+
+        /// <summary>
+        /// Adds action based on rule-checking
+        /// </summary>
+        /// <param name="rule">Rule to be checked</param>
+        /// <param name="knowledgeBase">Knowledge base used for rule-checking</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery With(BoundRule rule, KnowledgeBase knowledgeBase)
         {
             return AddNode(rule, knowledgeBase, true);
         }
 
+        /// <summary>
+        /// Adds action based on fact-checking
+        /// </summary>
+        /// <param name="fact">Fact to be checked</param>
+        /// <param name="knowledgeBase">Knowledge base used for fact-checking</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery With(BoundFact fact, KnowledgeBase knowledgeBase)
         {
             return AddNode(fact, knowledgeBase, true);
         }
 
-        // Adds false path
-        // Must be some way to restrict multiple OrWith in the same scope as it is just erroneous behaviour
+        /// <summary>
+        /// Adds logical action to another branch
+        /// </summary>
+        /// <param name="action">Logical action</param>
+        /// <returns>Modified Logical query</returns>
         public LogicalQuery OrWith(LogicalAction action)
         {
             return AddNode(action, false);
         }
 
+        /// <summary>
+        /// Adds action based on backtrack iterator to another branch
+        /// </summary>
+        /// <param name="iterator">Iterator used to create an action</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery OrWith(BacktrackIterator iterator)
         {
             return AddNode(iterator, false);
         }
 
+        /// <summary>
+        /// Adds action based on list of predicates to another branch
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery OrWith(List<Predicate<List<IBound>>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
         }
 
+        /// <summary>
+        /// Adds action based on predicate to another branch
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery OrWith(Predicate<List<IBound>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
         }
 
+        /// <summary>
+        /// Adds action based on rule-checking to another branch
+        /// </summary>
+        /// <param name="rule">Rule to be checked</param>
+        /// <param name="knowledgeBase">Knowledge base used for rule-checking</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery OrWith(BoundRule rule, KnowledgeBase knowledgeBase)
         {
             return AddNode(rule, knowledgeBase, false);
         }
 
+        /// <summary>
+        /// Adds action based on fact-checking to another branch
+        /// </summary>
+        /// <param name="fact">Fact to be checked</param>
+        /// <param name="knowledgeBase">Knowledge base used for fact-checking</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery OrWith(BoundFact fact, KnowledgeBase knowledgeBase)
         {
             return AddNode(fact, knowledgeBase, false);
         }
 
-        // Scopes out - performs all actions inside as a subquery - inits with context of origin, performs all actions and proceeds
+        /// <summary>
+        /// Adds action based on scoped query
+        /// </summary>
+        /// <param name="innerQuery">Query that will run in the inner scope</param>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery WithScoped(LogicalQuery innerQuery)
         {
             CheckIfCanBuild();
 
-            // as it must be possible to create templated query 
-            // both action of creation and action of work must be encapsulated here
             bool metTerminalCondition = false;
 
             return With(new BacktrackIterator(
@@ -408,11 +485,14 @@ namespace LOGQ
             ));
         }
 
-        // Adds layer of one action that always succeeds,
-        // returns new logical query that has context (previously done actions and it's results),
-        // but has no info on previous layers (it's cut and will never get back on),
-        // so as soon as some root gets succesful and query gets to cut layer - it never goes back
 
+        /// <summary>
+        /// Adds layer of one action that always succeeds,
+        /// returns new logical query that has context (previously done actions and it's results),
+        /// but has no info on previous layers (it's cut and will never get back on),
+        /// so as soon as some branch gets succesful and query gets to cut layer - it never goes back
+        /// </summary>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery Cut()
         {
             CheckIfCanBuild();
@@ -421,6 +501,10 @@ namespace LOGQ
             return With(copyStorage =>  madeCut ? madeCut : _tree.Cut());
         }
 
+        /// <summary>
+        /// Adds action that always returns false
+        /// </summary>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery Fail()
         {
             CheckIfCanBuild();
@@ -428,23 +512,33 @@ namespace LOGQ
             return With(copyStorage => false);
         }
 
+        /// <summary>
+        /// Adds action that always returns true
+        /// </summary>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery Succeed()
         {
             CheckIfCanBuild();
 
             return With(copyStorage => true);
         }
-
         private void ContextRollback(LogicalAction action)
         {
             action.Rollback();
         }
 
+        /// <summary>
+        /// Resets query state
+        /// </summary>
         public void Reset()
         {
             _tree.Reset();
         }
 
+        /// <summary>
+        /// Executes query
+        /// </summary>
+        /// <returns>Result of execution</returns>
         public bool Execute()
         {
             End();
