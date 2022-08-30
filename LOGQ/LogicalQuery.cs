@@ -6,15 +6,7 @@ namespace LOGQ
 {
     public class LogicalAction
     {
-        // To get rid of single variant / multiple variants system using queue for both
-        
-        // Queues look too large for pretty big data sets, they rather must be moved to lazy queues
-        // or for delegate producing some result type output
-
-        // Better switch to some kind of inner Get Next:
-        //  - Search for rules is not linear
-        //  - Lists are just pointers to list instantiated elsewhere
-        //  - Passing list of actions still requires lots of code, creating GetNext function won't be much harder
+        // To get rid of single variant / multiple variants system using interface that iterates through options
 
         protected BacktrackIterator _iterator;
 
@@ -51,7 +43,7 @@ namespace LOGQ
         // at rollback or values are restored
 
         // Now Bounds themselves control their values history
-        // So it must be replaced with a hashset or list (multiple changes)
+        // So it must be replaced with a list (not set because of possible multiple changes)
         public List<IBound> _boundsCopy = new List<IBound>();
 
         // That means Reset bounds calls for Rollback for each bound in the list
@@ -64,7 +56,7 @@ namespace LOGQ
             _boundsCopy.Clear();
         }
 
-        // Rollback must repopulate LAction with values
+        // Rollback must repopulate LogicalAction with values
 
         public void Rollback()
         {
@@ -93,28 +85,16 @@ namespace LOGQ
         }
     }
 
-    // Must be better to connect it to the knowledge base from the very beginning
-    // Cause it's better to compose the results of queries running on multiple sources data then merging it together 
 
     // Logical query contains all actions
     // Fluent-style query functions used to update query
 
     // That's said query is a lazy object
     // As it's unknown when it's build stops query will have an execute method
-
-    // Must be possible to generate "templated query" by providing bounds to it
-    // To create a templated query it must accept some sort of bindkeys set passed in
-    // It's possible to utilize factory method approach for custom queries, but there are also queries that require fact passing
-    // Maybe it can be solved with duck-typing approach
     public class LogicalQuery
     {
-        // Possibly need to add tree builder (As it's available only in this class it's pretty encapsulated)
-        // Tree might not be modified from outside by means of Add (Cut is allowed)
-        // So it can be rewritten with two states
-
         class QueryTree
         {
-            // to pass context
             LogicalQuery query;
 
             public QueryTree(LogicalQuery query)
@@ -197,7 +177,7 @@ namespace LOGQ
 
                 if (rootLocal is null)
                 {
-                    // throw exception 
+                    throw new InvalidOperationException("Can't add or branch without main branch"); 
                 }
 
                 rootLocal.nextOnFalse = newNode;
@@ -428,16 +408,14 @@ namespace LOGQ
             ));
         }
 
+        // Adds layer of one action that always succeeds,
+        // returns new logical query that has context (previously done actions and it's results),
+        // but has no info on previous layers (it's cut and will never get back on),
+        // so as soon as some root gets succesful and query gets to cut layer - it never goes back
+
         public LogicalQuery Cut()
         {
             CheckIfCanBuild();
-
-            // adds layer of one action that always succeeds
-            // returns new logical query that has context (previously done actions and it's results)
-            // but has no info on previous layers (it's cut and will never get back on)
-
-            // so as soon as some root gets succesful and query gets to cut layer - it never goes back
-            // Must restructure one path - if after cut everything turns out bad - false path must be considered too
 
             bool madeCut = false;
             return With(copyStorage =>  madeCut ? madeCut : _tree.Cut());

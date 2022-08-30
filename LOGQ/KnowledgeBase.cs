@@ -11,7 +11,6 @@ namespace LOGQ
 
     public abstract class BoundFact : Fact 
     {
-        // Check for facts must remember about it comparing fact variables, but setting bind keys
         abstract public void Bind(Fact fact, List<IBound> copyStorage);
     }
 
@@ -39,8 +38,7 @@ namespace LOGQ
 
     public sealed class KnowledgeBase
     {
-        // List potentially can be replaced with some kind of sorted table of values
-        // But that must not be an overkill as program can't check (now at least) if only suitable result is sought
+        // List potentially can be replaced with some kind of relational table of values
         private Dictionary<Type, List<Fact>> _facts = new Dictionary<Type, List<Fact>>();
         private Dictionary<Type, List<RuleWithBody>> _rules = new Dictionary<Type, List<RuleWithBody>>();
 
@@ -63,14 +61,16 @@ namespace LOGQ
                     });
                 }
             }
+            else
+            {
+                throw new ArgumentException("No facts of that type");
+            }
 
             return factCheckPredicates;
         }
 
         public BacktrackIterator CheckForRules(BoundRule ruleHead)
         {
-            // Get generated type, provide this as a method
-
             Type ruleType = ruleHead.RuleType();
 
             if (_rules.ContainsKey(ruleType))
@@ -101,7 +101,6 @@ namespace LOGQ
                                 offset++;
                                 innerQuery.Reset();
                                 innerQuery = null;
-                                // Proof for rule inexistence - false for all rules, not once
                                 continue;
                             }
 
@@ -129,9 +128,6 @@ namespace LOGQ
             _facts[factType].Add(fact);
         }
 
-        // Rule must specify what kind of condition is needed to conclude fact existence
-        // Rules may be defined as query that succeeds only if fact exists
-        // As an initial parameters it will recieve fact variables for fact it will try to conclude
         public void DeclareRule(RuleWithBody rule)
         {
             Type ruleType = rule.Head.RuleType();

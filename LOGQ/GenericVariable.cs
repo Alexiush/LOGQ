@@ -8,16 +8,13 @@ namespace LOGQ
 {
     public interface IVariable { }
 
-    public interface IBound 
-    {
-        public void Rollback();
-    }
+    public interface IBound { public void Rollback(); }
 
     public class Variable<T> : IVariable
     {
         public T Value { get; protected set; }
 
-        internal Variable() {}
+        private protected Variable() {}
 
         public Variable(T value)
         {
@@ -50,7 +47,7 @@ namespace LOGQ
 
     public class BoundVariable<T> : Variable<T>, IBound
     {
-        internal BoundVariable() { }
+        private protected BoundVariable() { }
 
         public BoundVariable(T value) : base(value)
         {
@@ -87,6 +84,7 @@ namespace LOGQ
         }
     }
 
+    /*
     public sealed class IgnorableVariable<T> : Variable<T>
     {
         public IgnorableVariable() {}
@@ -101,17 +99,18 @@ namespace LOGQ
             return false;
         }
     }
+    */
 
-    public sealed class DummyBoundVariable<T> : BoundVariable<T>
+    public sealed class UnboundVariable<T> : BoundVariable<T>
     {
-        public DummyBoundVariable() {}
+        public UnboundVariable() {}
 
-        public static bool operator ==(DummyBoundVariable<T> fact, Variable<T> otherFact)
+        public static bool operator ==(UnboundVariable<T> fact, Variable<T> otherFact)
         {
             return true;
         }
 
-        public static bool operator !=(DummyBoundVariable<T> fact, Variable<T> otherFact)
+        public static bool operator !=(UnboundVariable<T> fact, Variable<T> otherFact)
         {
             return false;
         }
@@ -130,7 +129,7 @@ namespace LOGQ
     }
 
     // Base class to generate patterns to match rule head (can't be exact values)
-    // Like Any, Equals, Unbound, ...
+    // Like Any, NotEqual, Unbound, ...
 
     public class RuleVariable<T> : Variable<T> 
     { 
@@ -139,6 +138,8 @@ namespace LOGQ
 
     public sealed class AnyValue<T> : RuleVariable<T>
     {
+        public AnyValue() { }
+
         public static bool operator ==(AnyValue<T> fact, BoundVariable<T> otherFact)
         {
             return true;
@@ -176,7 +177,6 @@ namespace LOGQ
 
         public static bool operator ==(NotEqual<T> fact, BoundVariable<T> otherFact)
         {
-            // make value seen somehow
             return !fact.Value.Equals(otherFact.Value);
         }
 

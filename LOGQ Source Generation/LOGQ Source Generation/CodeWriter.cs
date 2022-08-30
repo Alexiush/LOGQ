@@ -12,8 +12,6 @@ namespace LOGQ_Source_Generation
             return char.ToLower(property[0]) + property.Remove(0, 1);
         }
 
-
-        // Need to convert args names for constructors
         private static string GenerateFact(GenerationData dataToGenerate)
         {
             var sb = new StringBuilder();
