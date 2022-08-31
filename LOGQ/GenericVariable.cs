@@ -172,7 +172,7 @@ namespace LOGQ
     /// <typeparam name="T">Underlying type</typeparam>
     public class RuleVariable<T> : Variable<T> 
     { 
-        private protected RuleVariable() { }
+        protected RuleVariable() { }
     }
 
     /// <summary>
