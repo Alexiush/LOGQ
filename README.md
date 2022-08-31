@@ -65,7 +65,7 @@ Knowledge bases are storing facts and rules and can provide backtrack iterators 
 // Let's say we have some records about school students
 KnowledgeBase students = new KnowledgeBase();
 
-// There is a record about named Andrew in 7th grade
+// There is a record about student named Andrew in 7th grade
 students.DeclareFact(new FactStudent("Andrew", 7))
 
 // Also we know that if we have a record about student in higher grade we also have records about that student in lesser grades
