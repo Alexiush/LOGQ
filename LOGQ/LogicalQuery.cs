@@ -46,7 +46,9 @@ namespace LOGQ
 
         public List<IBound> _boundsCopy = new List<IBound>();
 
-        // That means Reset bounds calls for Rollback for each bound in the list
+        /// <summary>
+        /// Resets all bounds made while applying action
+        /// </summary>
         protected void ResetBounds()
         {
             foreach (IBound boundCopy in _boundsCopy)
@@ -56,12 +58,19 @@ namespace LOGQ
             _boundsCopy.Clear();
         }
 
+        /// <summary>
+        /// Called when action effect must be reset (while backtracked)
+        /// </summary>
         public void Rollback()
         {
             ResetBounds();
             _iterator.Reset();
         }
 
+        /// <summary>
+        /// Gets next action until it finds action that returns true or gets out of actions
+        /// </summary>
+        /// <returns>true if there is a true action, false if there is no more true actions</returns>
         public virtual bool GetNext()
         {
             Predicate<List<IBound>> predicate = _iterator.GetNext(); 
@@ -97,6 +106,9 @@ namespace LOGQ
     /// </summary>
     public class LogicalQuery
     {
+        /// <summary>
+        /// Class that represents query structure
+        /// </summary>
         class QueryTree
         {
             LogicalQuery query;
@@ -105,7 +117,10 @@ namespace LOGQ
             {
                 this.query = query;
             }
-
+            
+            /// <summary>
+            /// Class that represents node(action) in query tree
+            /// </summary>
             public class Node
             {
                 public Node parent;
@@ -135,6 +150,10 @@ namespace LOGQ
 
             private Node stateNode = null;
 
+            /// <summary>
+            /// Restructures query tree when cut node is triggered
+            /// </summary>
+            /// <returns>Success of cut action</returns>
             public bool Cut()
             {
                 Node pointer = currentNode.parent;
@@ -149,6 +168,10 @@ namespace LOGQ
                 return true;
             }
 
+            /// <summary>
+            /// Sets global entry point of query
+            /// </summary>
+            /// <param name="newGlobalRoot">Global entry point</param>
             void SetGlobalRoot(Node newGlobalRoot)
             {
                 rootGlobal = newGlobalRoot;
@@ -156,11 +179,19 @@ namespace LOGQ
                 currentNode = newGlobalRoot;
             }
 
+            /// <summary>
+            /// Sets entry point for some branch
+            /// </summary>
+            /// <param name="newLocalRoot">Entry point</param>
             void SetLocalRoot(Node newLocalRoot)
             {
                 rootLocal = newLocalRoot;
             }
 
+            /// <summary>
+            /// Adds new node to current branch
+            /// </summary>
+            /// <param name="action">Action to be represented by new node</param>
             public void Add(LogicalAction action)
             {
                 Node newNode = new Node(action, currentNode, rootLocal);
@@ -175,6 +206,13 @@ namespace LOGQ
                 currentNode = newNode;
             }
 
+            /// <summary>
+            /// Adds node that moves execution to another branch
+            /// </summary>
+            /// <param name="action">Action to be represented by new node</param>
+            /// <exception cref="InvalidOperationException">
+            /// Can't add or branch without main branch
+            /// </exception>
             public void AddFalse(LogicalAction action)
             {
                 Node newNode = new Node(action, rootLocal, rootLocal);
@@ -189,6 +227,10 @@ namespace LOGQ
                 currentNode = newNode;
             }
 
+            /// <summary>
+            /// Starts query execution - searching for completely true path in query tree
+            /// </summary>
+            /// <returns>Query execution result</returns>
             public bool Execute()
             {
                 if (rootGlobal is null)
@@ -236,6 +278,10 @@ namespace LOGQ
                 return true;
             }
 
+            /// <summary>
+            /// Resets state of the node
+            /// </summary>
+            /// <param name="node">Node to be reset</param>
             private void ResetNode(Node node)
             {
                 if (node == null)
@@ -251,6 +297,9 @@ namespace LOGQ
                 ResetNode(node.nextOnFalse);
             }
 
+            /// <summary>
+            /// Resets query state
+            /// </summary>
             public void Reset()
             {
                 stateNode = null;
@@ -281,6 +330,12 @@ namespace LOGQ
             return this;
         }
 
+        /// <summary>
+        /// Throws exception if complete query is about to be modified
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// When complete query is about to be modified
+        /// </exception>
         private void CheckIfCanBuild()
         {
             if (_finishedBuilding)
@@ -289,6 +344,12 @@ namespace LOGQ
             }
         }
 
+        /// <summary>
+        /// Adds logical action 
+        /// </summary>
+        /// <param name="action">Action to be added</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified query</returns>
         private LogicalQuery AddNode(LogicalAction action, bool pathDirection)
         {
             CheckIfCanBuild();
@@ -304,16 +365,34 @@ namespace LOGQ
             return this;
         }
 
+        /// <summary>
+        /// Adds logical action based on backtrack iterator
+        /// </summary>
+        /// <param name="iterator">Iterator used to create an action</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
         private LogicalQuery AddNode(BacktrackIterator iterator, bool pathDirection)
         {
             return AddNode(new LogicalAction(iterator), pathDirection);
         }
 
+        /// <summary>
+        /// Adds logical action based on list of predicates
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
         private LogicalQuery AddNode(List<Predicate<List<IBound>>> actionInitializer, bool pathDirection)
         {
             return AddNode(new LogicalAction(actionInitializer), pathDirection);
         }
 
+        /// <summary>
+        /// Adds logical action based on single predicate
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
         private LogicalQuery AddNode(Predicate<List<IBound>> actionInitializer, bool pathDirection)
         {
             List<Predicate<List<IBound>>> list =
@@ -322,11 +401,25 @@ namespace LOGQ
             return AddNode(list, pathDirection);
         }
 
+        /// <summary>
+        /// Adds action based on rule-check
+        /// </summary>
+        /// <param name="rule">Rule to be checked</param>
+        /// <param name="knowledgeBase">Knowledge base used for rule-check</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
         private LogicalQuery AddNode(BoundRule rule, KnowledgeBase knowledgeBase, bool pathDirection)
         {
             return AddNode(knowledgeBase.CheckForRules(rule), pathDirection);
         }
 
+        /// <summary>
+        /// Adds action based on fact-check
+        /// </summary>
+        /// <param name="fact">Fact to be checked</param>
+        /// <param name="knowledgeBase">Knowledge base used for fact-checking</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
         private LogicalQuery AddNode(BoundFact fact, KnowledgeBase knowledgeBase, bool pathDirection)
         {
             return AddNode(knowledgeBase.CheckForFacts(fact), pathDirection);
@@ -336,7 +429,7 @@ namespace LOGQ
         /// Adds logical action
         /// </summary>
         /// <param name="action">Logical action</param>
-        /// <returns>Modified Logical query</returns>
+        /// <returns>Modified logical query</returns>
         public LogicalQuery With(LogicalAction action)
         {
             return AddNode(action, true);
@@ -522,6 +615,11 @@ namespace LOGQ
 
             return With(copyStorage => true);
         }
+
+        /// <summary>
+        /// Initiates action rollback
+        /// </summary>
+        /// <param name="action">Action to be rolled back</param>
         private void ContextRollback(LogicalAction action)
         {
             action.Rollback();

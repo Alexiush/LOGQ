@@ -27,6 +27,10 @@ namespace LOGQ
             this._reset = reset;
         }
 
+        /// <summary>
+        /// Returns backtrack iterator for not function
+        /// </summary>
+        /// <returns>Negated backtrack iterator</returns>
         internal BacktrackIterator Negate()
         {
             bool foundAnswer = false;

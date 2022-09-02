@@ -118,23 +118,6 @@ namespace LOGQ
         }
     }
 
-    /*
-    public sealed class IgnorableVariable<T> : Variable<T>
-    {
-        public IgnorableVariable() {}
-
-        public static bool operator ==(IgnorableVariable<T> fact, Variable<T> otherFact)
-        {
-            return true;
-        }
-
-        public static bool operator !=(IgnorableVariable<T> fact, Variable<T> otherFact)
-        {
-            return false;
-        }
-    }
-    */
-
     /// <summary>
     /// Unbound variable - one to get a value, works as any value when comparing
     /// </summary>
