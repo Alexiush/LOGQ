@@ -12,54 +12,61 @@ namespace LOGQ_Source_Generation
             return char.ToLower(property[0]) + property.Remove(0, 1);
         }
 
-        private static string GenerateFact(GenerationData dataToGenerate)
+        private static string WriteHeader(string className, string inheritedClass)
         {
-            var sb = new StringBuilder();
-
-            string className = "Fact" + dataToGenerate.Name.Replace('.', '_');
-
-            // Header
+            StringBuilder sb = new StringBuilder();
 
             sb.Append(@"
     public class ")
-            .Append($"{className} : LOGQ.Fact")
+            .Append($"{className} : {inheritedClass}")
             .Append(@"
     {");
-            // Properties
 
-            foreach (Property property in dataToGenerate.Properties)
+            return sb.ToString();
+        }
+
+        private static string WriteProperties(string propertyPrefix, List<Property> properties)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            foreach (Property property in properties)
             {
                 sb.Append(@"
-        public Variable<")
+        public " + propertyPrefix + "<")
                     .Append($"{property.PropertyType}> {property.PropertyName};");
             }
 
             sb.Append("\n");
 
-            // Constructor
+            return sb.ToString();
+        }
+
+        private static string WriteConstructor(string className, string propertyPrefix, List<Property> properties)
+        {
+            StringBuilder sb = new StringBuilder();
 
             sb.Append(@"
         public ")
-            .Append($"{className}(");
-            
-            if (dataToGenerate.Properties.Count > 0)
+.Append($"{className}(");
+
+            if (properties.Count > 0)
             {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
+                for (int index = 0; index < properties.Count; index++)
                 {
-                    Property property = dataToGenerate.Properties[index];
+                    Property property = properties[index];
 
                     if (index > 0)
                     {
                         sb.Append(", ");
                     }
-                    sb.Append($"Variable<{property.PropertyType}> {PropertyToField(property.PropertyName)}");
+                    sb.Append($"{propertyPrefix}<{property.PropertyType}> {PropertyToField(property.PropertyName)}");
                 }
             }
 
             sb.Append(@")
         {");
 
-            foreach (Property property in dataToGenerate.Properties)
+            foreach (Property property in properties)
             {
                 sb.Append(@"
             this.")
@@ -67,137 +74,26 @@ namespace LOGQ_Source_Generation
             }
             sb.Append(@"
         }
-");
-
-            // == and != overload
-
-            sb.Append(@"
-        public static bool operator ==(")
-                .Append($"{className} fact, {className}")
-                .Append(@" otherFact)
-        {
-            return ");
-            if (dataToGenerate.Properties.Count > 0)
-            {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
-                {
-                    Property property = dataToGenerate.Properties[index];
-
-                    if (index > 0)
-                    {
-                        sb.Append(" && ");
-                    }
-                    sb.Append($"fact.{property.PropertyName}.Equals(otherFact.{property.PropertyName})");
-                }
-
-                sb.Append(";");
-            }
-            else
-            {
-                sb.Append("return true;");
-            }
-
-            sb.Append(@"
-        }
-");
-
-            sb.Append(@"
-        public static bool operator !=(")
-                .Append($"{className} fact, {className}")
-                .Append(@" otherFact)
-        {
-            return !(fact == otherFact);
-        }
-");
-
-            // Get Type
-
-            sb.Append(@"
-        public override Type FactType()
-        {
-            return ").Append($"typeof({dataToGenerate.OriginName});").Append(@"
-        }
-");
-
-            // End
-
-            sb.Append(@"
-    }
 ");
 
             return sb.ToString();
         }
 
-        private static string GenerateBoundFact(GenerationData dataToGenerate)
+        private static string EqualityOperatorsOverload(string type, string otherType, List<Property> properties)
         {
-            var sb = new StringBuilder();
-
-            string className = "BoundFact" + dataToGenerate.Name.Replace('.', '_');
-
-            // Header
-
-            sb.Append(@"
-    public class ")
-            .Append($"{className} : LOGQ.BoundFact")
-            .Append(@"
-    {");
-            // Properties
-
-            foreach (Property property in dataToGenerate.Properties)
-            {
-                sb.Append(@"
-        public BoundVariable<")
-                    .Append($"{property.PropertyType}> {property.PropertyName};");
-            }
-
-            sb.Append("\n");
-
-            // Constructor
-
-            sb.Append(@"
-        public ")
-            .Append($"{className}(");
-
-            if (dataToGenerate.Properties.Count > 0)
-            {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
-                {
-                    Property property = dataToGenerate.Properties[index];
-
-                    if (index > 0)
-                    {
-                        sb.Append(", ");
-                    }
-                    sb.Append($"BoundVariable<{property.PropertyType}> {PropertyToField(property.PropertyName)}");
-                }
-            }
-
-            sb.Append(@")
-        {");
-
-            foreach (Property property in dataToGenerate.Properties)
-            {
-                sb.Append(@"
-            this.")
-                .Append($"{property.PropertyName} = {PropertyToField(property.PropertyName)};");
-            }
-            sb.Append(@"
-        }
-");
-
-            // == and != overload
+            StringBuilder sb = new StringBuilder();
 
             sb.Append(@"
         public static bool operator ==(")
-                .Append($"{className} fact, {className}")
+                .Append($"{type} fact, {otherType}")
                 .Append(@" otherFact)
         {
             return ");
-            if (dataToGenerate.Properties.Count > 0)
+            if (properties.Count > 0)
             {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
+                for (int index = 0; index < properties.Count; index++)
                 {
-                    Property property = dataToGenerate.Properties[index];
+                    Property property = properties[index];
 
                     if (index > 0)
                     {
@@ -219,64 +115,28 @@ namespace LOGQ_Source_Generation
 
             sb.Append(@"
         public static bool operator !=(")
-                .Append($"{className} fact, {className}")
+                .Append($"{type} fact, {otherType}")
                 .Append(@" otherFact)
         {
             return !(fact == otherFact);
         }
 ");
 
-            // == and != with common Fact
-
-            sb.Append(@"
-        public static bool operator ==(")
-                .Append($"{className} fact, Fact{dataToGenerate.Name.Replace('.', '_')}")
-                .Append(@" otherFact)
-        {
-            return ");
-            if (dataToGenerate.Properties.Count > 0)
-            {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
-                {
-                    Property property = dataToGenerate.Properties[index];
-                    
-                    if (index > 0)
-                    {
-                        sb.Append(" && ");
-                    }
-                    sb.Append($"fact.{property.PropertyName}.Equals(otherFact.{property.PropertyName})");
-                }
-
-                sb.Append(";");
-            }
-            else
-            {
-                sb.Append("return true;");
-            }
-
-            sb.Append(@"
+            return sb.ToString();
         }
-");
 
-            sb.Append(@"
-        public static bool operator !=(")
-                .Append($"{className} fact, Fact{dataToGenerate.Name.Replace('.', '_')}")
-                .Append(@" otherFact)
+        private static string EqualsOverload(string type, string otherType)
         {
-            return !(fact == otherFact);
-        }
-");
-
-            // Equals
+            StringBuilder sb = new StringBuilder();
 
             sb.Append(@"
         public override bool Equals(object? obj)
         {
             ")
-            .Append($"{className} bound = obj as {className}")
+            .Append($"{type} bound = obj as {type}")
             .Append(@";
             ")
-            .Append($"Fact{dataToGenerate.Name.Replace('.', '_')} common = obj as Fact{dataToGenerate.Name.Replace('.', '_')}")
+            .Append($"{otherType} common = obj as {otherType}")
             .Append(@";
             
             ")
@@ -294,18 +154,80 @@ namespace LOGQ_Source_Generation
         }
 ");
 
+            return sb.ToString();
+        }
 
-            // Get Type
+        private static string TypeGetterOverload(string getterName, string type)
+        {
+            StringBuilder sb = new StringBuilder();
 
             sb.Append(@"
-        public override Type FactType()
+        public override Type " + getterName + @"()
         {
-            return ").Append($"typeof({dataToGenerate.OriginName});").Append(@"
+            return ").Append($"typeof({type});").Append(@"
         }
 ");
 
-            // Bind
+            return sb.ToString();
+        }
 
+        private static string GenerateFact(GenerationData dataToGenerate)
+        {
+            var sb = new StringBuilder();
+
+            string className = "Fact" + dataToGenerate.Name.Replace('.', '_');
+
+            // Header
+            sb.Append(WriteHeader(className, "LOGQ.Fact"));
+
+            // Properties
+            sb.Append(WriteProperties("Variable", dataToGenerate.Properties));
+
+            // Constructor
+            sb.Append(WriteConstructor(className, "Variable", dataToGenerate.Properties));
+
+            // == and != overload
+            sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
+
+            // Get Type
+            sb.Append(TypeGetterOverload("FactType", dataToGenerate.OriginName));
+
+            // End
+            sb.Append(@"
+    }
+");
+
+            return sb.ToString();
+        }
+
+        private static string GenerateBoundFact(GenerationData dataToGenerate)
+        {
+            var sb = new StringBuilder();
+
+            string className = "BoundFact" + dataToGenerate.Name.Replace('.', '_');
+
+            // Header
+            sb.Append(WriteHeader(className, "LOGQ.BoundFact"));
+
+            // Properties
+            sb.Append(WriteProperties("BoundVariable", dataToGenerate.Properties));
+
+            // Constructor
+            sb.Append(WriteConstructor(className, "BoundVariable", dataToGenerate.Properties));
+
+            // == and != overload
+            sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
+
+            // == and != with common Fact
+            sb.Append(EqualityOperatorsOverload(className, "Fact" + dataToGenerate.Name.Replace('.', '_'), dataToGenerate.Properties));
+
+            // Equals
+            sb.Append(EqualsOverload(className, $"Fact{dataToGenerate.Name.Replace('.', '_')}"));
+
+            // Get Type
+            sb.Append(TypeGetterOverload("FactType", dataToGenerate.OriginName));
+
+            // Bind
             sb.Append(@"
         public override void Bind(Fact fact, List<IBound> copyStorage)
         {
@@ -344,191 +266,25 @@ namespace LOGQ_Source_Generation
             string className = "Rule" + dataToGenerate.Name.Replace('.', '_');
 
             // Header
+            sb.Append(WriteHeader(className, "LOGQ.Rule"));
 
-            sb.Append(@"
-    public class ")
-            .Append(className)
-            .Append(" : LOGQ.Rule")
-            .Append(@"
-    {");
             // Properties
-
-            foreach (Property property in dataToGenerate.Properties)
-            {
-                sb.Append(@"
-        public Variable<")
-                    .Append(property.PropertyType)
-                    .Append("> ")
-                    .Append(property.PropertyName)
-                    .Append(";\n");
-            }
-
-            sb.Append("\n");
+            sb.Append(WriteProperties("Variable", dataToGenerate.Properties));
 
             // Constructor
-
-            sb.Append(@"
-        public ")
-            .Append(className)
-            .Append("(");
-
-            if (dataToGenerate.Properties.Count > 0)
-            {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
-                {
-                    Property property = dataToGenerate.Properties[index];
-
-                    if (index > 0)
-                    {
-                        sb.Append(", ");
-                    }
-                    sb.Append("Variable<")
-                        .Append(property.PropertyType)
-                        .Append("> ")
-                        .Append(PropertyToField(property.PropertyName));
-                }
-            }
-
-            sb.Append(@")
-        {");
-
-            foreach (Property property in dataToGenerate.Properties)
-            {
-                sb.Append(@"
-            this.")
-                .Append(property.PropertyName)
-                .Append(" = ")
-                .Append(PropertyToField(property.PropertyName))
-                .Append(";");
-            }
-            sb.Append(@"
-        }
-");
+            sb.Append(WriteConstructor(className, "Variable", dataToGenerate.Properties));
 
             // == and != overload
+            sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
 
-            sb.Append(@"
-        public static bool operator ==(")
-                .Append(className)
-                .Append(" fact, ")
-                .Append(className)
-                .Append(@" otherFact)
-        {
-            return ");
-            if (dataToGenerate.Properties.Count > 0)
-            {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
-                {
-                    Property property = dataToGenerate.Properties[index];
+            // == and != with bound fact
+            sb.Append(EqualityOperatorsOverload(className, "Bound" + className, dataToGenerate.Properties));
 
-                    if (index > 0)
-                    {
-                        sb.Append(" && ");
-                    }
-                    sb.Append($"fact.{property.PropertyName}.Equals(otherFact.{property.PropertyName})");
-                }
-
-                sb.Append(";");
-            }
-            else
-            {
-                sb.Append("return true;");
-            }
-
-            sb.Append(@"
-        }
-");
-
-            sb.Append(@"
-        public static bool operator !=(")
-                .Append(className)
-                .Append(" fact, ")
-                .Append(className)
-                .Append(@" otherFact)
-        {
-            return !(fact == otherFact);
-        }
-");
-
-            sb.Append(@"
-        public static bool operator ==(")
-                .Append(className)
-                .Append(" fact, ")
-                .Append($"Bound{className}")
-                .Append(@" otherFact)
-        {
-            return ");
-            if (dataToGenerate.Properties.Count > 0)
-            {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
-                {
-                    Property property = dataToGenerate.Properties[index];
-
-                    if (index > 0)
-                    {
-                        sb.Append(" && ");
-                    }
-                    sb.Append($"fact.{property.PropertyName}.Equals(otherFact.{property.PropertyName})");
-                }
-
-                sb.Append(";");
-            }
-            else
-            {
-                sb.Append("return true;");
-            }
-
-            sb.Append(@"
-        }
-");
-
-            sb.Append(@"
-        public static bool operator !=(")
-                .Append(className)
-                .Append(" fact, ")
-                .Append($"Bound{className}")
-                .Append(@" otherFact)
-        {
-            return !(fact == otherFact);
-        }
-");
             // Equals
-
-            sb.Append(@"
-        public override bool Equals(object? obj)
-        {
-            ")
-            .Append($"{className} common = obj as {className}")
-            .Append(@";
-            ")
-            .Append($"Bound{className} bound = obj as Bound{className}")
-            .Append(@";
-            
-            ")
-            .Append(@"if (!(bound is null))
-            {
-                return this == bound;
-            }
-            
-            if (!(common is null))
-            {
-                return this == common;
-            }
-            
-            return false;
-        }
-");
-
-
+            sb.Append(EqualsOverload($"Bound{className}", className));
 
             // Get Type
-
-            sb.Append(@"
-        public override Type RuleType()
-        {
-            return ").Append($"typeof({dataToGenerate.OriginName});").Append(@"
-        }
-");
+            sb.Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName));
 
             // End
 
@@ -546,195 +302,27 @@ namespace LOGQ_Source_Generation
             string className = "BoundRule" + dataToGenerate.Name.Replace('.', '_');
 
             // Header
+            sb.Append(WriteHeader(className, "LOGQ.BoundRule"));
 
-            sb.Append(@"
-    public class ")
-            .Append(className)
-            .Append(" : LOGQ.BoundRule")
-            .Append(@"
-    {");
             // Properties
-
-            foreach (Property property in dataToGenerate.Properties)
-            {
-                sb.Append(@"
-        public BoundVariable<")
-                    .Append(property.PropertyType)
-                    .Append("> ")
-                    .Append(property.PropertyName)
-                    .Append(";\n");
-            }
-
-            sb.Append("\n");
+            sb.Append(WriteProperties("BoundVariable", dataToGenerate.Properties));
 
             // Constructor
-
-            sb.Append(@"
-        public ")
-            .Append(className)
-            .Append("(");
-
-            if (dataToGenerate.Properties.Count > 0)
-            {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
-                {
-                    Property property = dataToGenerate.Properties[index];
-
-                    if (index > 0)
-                    {
-                        sb.Append(", ");
-                    }
-                    sb.Append("BoundVariable<")
-                        .Append(property.PropertyType)
-                        .Append("> ")
-                        .Append(PropertyToField(property.PropertyName));
-                }
-            }
-
-            sb.Append(@")
-        {");
-
-            foreach (Property property in dataToGenerate.Properties)
-            {
-                sb.Append(@"
-            this.")
-                .Append(property.PropertyName)
-                .Append(" = ")
-                .Append(PropertyToField(property.PropertyName))
-                .Append(";");
-            }
-            sb.Append(@"
-        }
-");
+            sb.Append(WriteConstructor(className, "BoundVariable", dataToGenerate.Properties));
 
             // == and != overload
+            sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
 
-            sb.Append(@"
-        public static bool operator ==(")
-                .Append(className)
-                .Append(" fact, ")
-                .Append(className)
-                .Append(@" otherFact)
-        {
-            return ");
-            if (dataToGenerate.Properties.Count > 0)
-            {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
-                {
-                    Property property = dataToGenerate.Properties[index];
-
-                    if (index > 0)
-                    {
-                        sb.Append(" && ");
-                    }
-                    sb.Append($"fact.{property.PropertyName}.Equals(otherFact.{property.PropertyName})");
-                }
-
-                sb.Append(";");
-            }
-            else
-            {
-                sb.Append("return true;");
-            }
-
-            sb.Append(@"
-        }
-");
-
-            sb.Append(@"
-        public static bool operator !=(")
-                .Append(className)
-                .Append(" fact, ")
-                .Append(className)
-                .Append(@" otherFact)
-        {
-            return !(fact == otherFact);
-        }
-");
-
-            sb.Append(@"
-        public static bool operator ==(")
-    .Append(className)
-    .Append(" fact, ")
-    .Append($"Rule{dataToGenerate.Name.Replace('.', '_')}")
-    .Append(@" otherFact)
-        {
-            return ");
-            if (dataToGenerate.Properties.Count > 0)
-            {
-                for (int index = 0; index < dataToGenerate.Properties.Count; index++)
-                {
-                    Property property = dataToGenerate.Properties[index];
-
-                    if (index > 0)
-                    {
-                        sb.Append(" && ");
-                    }
-                    sb.Append($"fact.{property.PropertyName}.Equals(otherFact.{property.PropertyName})");
-                }
-
-                sb.Append(";");
-            }
-            else
-            {
-                sb.Append("return true;");
-            }
-
-            sb.Append(@"
-        }
-");
-
-            sb.Append(@"
-        public static bool operator !=(")
-                .Append(className)
-                .Append(" fact, ")
-                .Append($"Rule{dataToGenerate.Name.Replace('.', '_')}")
-                .Append(@" otherFact)
-        {
-            return !(fact == otherFact);
-        }
-");
+            // == and != for common rule
+            sb.Append(EqualityOperatorsOverload(className, "Rule" + dataToGenerate.Name.Replace('.', '_'), dataToGenerate.Properties));
 
             // Equals
-
-            sb.Append(@"
-        public override bool Equals(object? obj)
-        {
-            ")
-            .Append($"{className} bound = obj as {className}")
-            .Append(@";
-            
-            ")
-            .Append($"Rule{dataToGenerate.Name.Replace('.', '_')} common = obj as Rule{dataToGenerate.Name.Replace('.', '_')}")
-            .Append(@";
-            ")
-            .Append(@"if (!(bound is null))
-            {
-                return this == bound;
-            }
-            
-            if (!(common is null))
-            {
-                return this == common;
-            }
-            
-            return false;
-        }
-");
-
-
+            sb.Append(EqualsOverload(className, $"Rule{dataToGenerate.Name.Replace('.', '_')}"));
 
             // Get Type
-
-            sb.Append(@"
-        public override Type RuleType()
-        {
-            return ").Append($"typeof({dataToGenerate.OriginName});").Append(@"
-        }
-");
+            sb.Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName));
 
             // Bind
-
             sb.Append(@"
         public override void Bind(List<IBound> copyStorage)
         {");
