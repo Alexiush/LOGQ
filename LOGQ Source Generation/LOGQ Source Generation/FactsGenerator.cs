@@ -11,6 +11,9 @@ using System.IO;
 
 namespace LOGQ_Source_Generation
 {
+    /// <summary>
+    /// Class that represents properties of fact being mapped
+    /// </summary>
     public struct Property
     {
         public string PropertyName;
@@ -23,6 +26,9 @@ namespace LOGQ_Source_Generation
         }
     }
 
+    /// <summary>
+    /// Data needed to generate code
+    /// </summary>
     public class GenerationData
     {
         public readonly string OriginName;
@@ -37,9 +43,19 @@ namespace LOGQ_Source_Generation
         }
     }
 
+    /// <summary>
+    /// Class that generates fact/rule representations of objects
+    /// </summary>
     [Generator]
     public class FactsGenerator : IIncrementalGenerator
     {
+        /// <summary>
+        /// Gets data from class declaration syntax objects
+        /// </summary>
+        /// <param name="compilation">Compilation</param>
+        /// <param name="classes">Classes marked by attribute</param>
+        /// <param name="ct">Cancellation token</param>
+        /// <returns>List of data needed to generate facts/rules</returns>
         static List<GenerationData> GetTypesToGenerate(Compilation compilation, IEnumerable<ClassDeclarationSyntax> classes, CancellationToken ct)
         {
             // Create a list to hold output
@@ -151,6 +167,12 @@ namespace LOGQ_Source_Generation
             return classesToGenerate;
         }
 
+        /// <summary>
+        /// Generates code
+        /// </summary>
+        /// <param name="compilation">Compilation</param>
+        /// <param name="classes">Marked classes</param>
+        /// <param name="context">Source production context</param>
         static void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> classes, SourceProductionContext context)
         {
             if (classes.IsDefaultOrEmpty)
@@ -174,6 +196,10 @@ namespace LOGQ_Source_Generation
             }
         }
 
+        /// <summary>
+        /// Get marked classes
+        /// </summary>
+        /// <param name="context">Initialization context</param>
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             // Add the marker attribute to the compilation
