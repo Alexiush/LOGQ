@@ -22,25 +22,22 @@ namespace LOGQ
             this._iterator = iterator;
         }
 
-        internal LogicalAction(List<Predicate<List<IBound>>> actionInitializer)
+        internal LogicalAction(ICollection<Predicate<List<IBound>>> actionInitializer)
         {
-            int offset = 0;
+            var enumerator = actionInitializer.GetEnumerator();
 
             _iterator = new BacktrackIterator(
                 () =>
-                {
-                    if (offset >= actionInitializer.Count)
+                {   
+                    if (!enumerator.MoveNext())
                     {
                         return null;
                     }
 
-                    Predicate<List<IBound>> predicate =
-                        actionInitializer[offset];
-
-                    offset++;
+                    Predicate<List<IBound>> predicate = enumerator.Current;
                     return predicate;
                 },
-                () => offset = 0
+                () => enumerator = actionInitializer.GetEnumerator()
             ); 
         }
 
@@ -377,12 +374,12 @@ namespace LOGQ
         }
 
         /// <summary>
-        /// Adds logical action based on list of predicates
+        /// Adds logical action based on collection of predicates
         /// </summary>
         /// <param name="actionInitializer">List of predicates used to create an action</param>
         /// <param name="pathDirection">May it be added to the current branch or or branch</param>
         /// <returns>Modified logical query</returns>
-        private LogicalQuery AddNode(List<Predicate<List<IBound>>> actionInitializer, bool pathDirection)
+        private LogicalQuery AddNode(ICollection<Predicate<List<IBound>>> actionInitializer, bool pathDirection)
         {
             return AddNode(new LogicalAction(actionInitializer), pathDirection);
         }
@@ -446,11 +443,11 @@ namespace LOGQ
         }
 
         /// <summary>
-        /// Adds action based on list of predicates
+        /// Adds action based on collection of predicates
         /// </summary>
         /// <param name="actionInitializer">List of predicates used to create an action</param>
         /// <returns>Modified logical query</returns>
-        public LogicalQuery With(List<Predicate<List<IBound>>> actionInitializer)
+        public LogicalQuery With(ICollection<Predicate<List<IBound>>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
         }
@@ -509,11 +506,11 @@ namespace LOGQ
         }
 
         /// <summary>
-        /// Adds action based on list of predicates to another branch
+        /// Adds action based on collection of predicates to another branch
         /// </summary>
         /// <param name="actionInitializer">List of predicates used to create an action</param>
         /// <returns>Modified logical query</returns>
-        public LogicalQuery OrWith(List<Predicate<List<IBound>>> actionInitializer)
+        public LogicalQuery OrWith(ICollection<Predicate<List<IBound>>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
         }

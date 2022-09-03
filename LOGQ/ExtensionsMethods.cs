@@ -11,7 +11,7 @@ namespace LOGQ.Extensions
         /// </summary>
         /// <param name="actionsToTry">List of available actions</param>
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
-        public static LogicalAction Not(List<Predicate<List<IBound>>> actionsToTry)
+        public static LogicalAction Not(ICollection<Predicate<List<IBound>>> actionsToTry)
         {
             return new LogicalAction(actionsToTry
                 .Select<Predicate<List<IBound>>, Predicate<List<IBound>>>
