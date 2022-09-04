@@ -49,6 +49,16 @@ namespace LOGQ_Source_Generation
     [Generator]
     public class FactsGenerator : IIncrementalGenerator
     {
+        private static bool PropertyFilter(ISymbol member) 
+            => member.Kind == SymbolKind.Property;
+        private static bool FieldFilter(ISymbol member) 
+            => member.Kind == SymbolKind.Field;
+        private static bool PublicityFilter(ISymbol member) 
+            => member.DeclaredAccessibility == Accessibility.Public;
+
+        private static bool MarkedFilter(ISymbol member) 
+            => member.GetAttributes().Any(a => a.AttributeClass.ToDisplayString() == "LOGQ.FactMemberAttribute");
+
         /// <summary>
         /// Gets data from class declaration syntax objects
         /// </summary>
@@ -85,6 +95,7 @@ namespace LOGQ_Source_Generation
 
                 // Get the full type name of the class 
                 string className = classSymbol.ToDisplayString();
+                int mappingMode = 0;
 
                 // Loop through all of the attributes on the class until we find the [LOGQ.Fact] attribute
                 foreach (AttributeData attributeData in classSymbol.GetAttributes())
@@ -154,10 +165,39 @@ namespace LOGQ_Source_Generation
                 ImmutableArray<ISymbol> classMembers = classSymbol.GetMembers();
                 var properties = new List<Property>(classMembers.Length);
 
+                Predicate<ISymbol> filter = member => false;
+
+                switch (mappingMode)
+                {
+                    case 0:
+                        filter = member => PropertyFilter(member) && PublicityFilter(member);
+                        break;
+                    case 1:
+                        filter = member => PropertyFilter(member);
+                        break;
+                    case 2:
+                        filter = member => FieldFilter(member) && PublicityFilter(member);
+                        break;
+                    case 3:
+                        filter = member => FieldFilter(member);
+                        break;
+                    case 4:
+                        filter = member => (PropertyFilter(member) || FieldFilter(member)) && PublicityFilter(member);
+                        break;
+                    case 5:
+                        filter = member => PropertyFilter(member) || FieldFilter(member);
+                        break;
+                    case 6:
+                        filter = member => MarkedFilter(member);
+                        break;
+                    default:
+                        break;
+                }
+
                 // Get all the properties from the class, and add their name to the list
                 foreach (ISymbol member in classMembers)
                 {
-                    if (member.Kind == SymbolKind.Property && member.DeclaredAccessibility == Accessibility.Public)
+                    if (filter(member))
                     {
                         properties.Add(new Property(member.Name, ((IPropertySymbol)member).Type.ToDisplayString()));
                     }
