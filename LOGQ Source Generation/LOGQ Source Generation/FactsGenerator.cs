@@ -84,7 +84,7 @@ namespace LOGQ_Source_Generation
                 }
 
                 // Get the full type name of the class 
-                string className = null;
+                string className = classSymbol.ToDisplayString();
 
                 // Loop through all of the attributes on the class until we find the [LOGQ.Fact] attribute
                 foreach (AttributeData attributeData in classSymbol.GetAttributes())
@@ -116,6 +116,9 @@ namespace LOGQ_Source_Generation
                             case 1:
                                 className = (string)args[0].Value;
                                 break;
+                            case 2:
+                                className = (string)args[0].Value;
+                                break;
                         }
                     }
 
@@ -136,7 +139,7 @@ namespace LOGQ_Source_Generation
                                 // Use the constructor argument or property name to infer which value is set
                                 switch (arg.Key)
                                 {
-                                    case "extensionClassName":
+                                    case "factName":
                                         className = (string)typedConstant.Value;
                                         break;
                                 }
@@ -151,7 +154,7 @@ namespace LOGQ_Source_Generation
                 ImmutableArray<ISymbol> classMembers = classSymbol.GetMembers();
                 var properties = new List<Property>(classMembers.Length);
 
-                // Get all the fields from the class, and add their name to the list
+                // Get all the properties from the class, and add their name to the list
                 foreach (ISymbol member in classMembers)
                 {
                     if (member.Kind == SymbolKind.Property && member.DeclaredAccessibility == Accessibility.Public)
