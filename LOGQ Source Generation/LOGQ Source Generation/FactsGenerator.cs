@@ -52,12 +52,30 @@ namespace LOGQ_Source_Generation
         private static bool PropertyFilter(ISymbol member) 
             => member.Kind == SymbolKind.Property;
         private static bool FieldFilter(ISymbol member) 
-            => member.Kind == SymbolKind.Field;
+            => member.Kind == SymbolKind.Field && ((IFieldSymbol)member).AssociatedSymbol is null;
         private static bool PublicityFilter(ISymbol member) 
             => member.DeclaredAccessibility == Accessibility.Public;
 
         private static bool MarkedFilter(ISymbol member) 
             => member.GetAttributes().Any(a => a.AttributeClass.ToDisplayString() == "LOGQ.FactMemberAttribute");
+
+        private static ITypeSymbol PropertyTypeReciever(ISymbol member)
+            => ((IPropertySymbol)member).Type;
+
+        private static ITypeSymbol FieldTypeReciever(ISymbol member)
+            => ((IFieldSymbol)member).Type;
+
+        private static ITypeSymbol UniversalTypeReciever(ISymbol member)
+        {
+            if (member as IPropertySymbol != null)
+            {
+                return PropertyTypeReciever(member);
+            }
+            else
+            {
+                return FieldTypeReciever(member);
+            }
+        }
 
         /// <summary>
         /// Gets data from class declaration syntax objects
@@ -129,6 +147,7 @@ namespace LOGQ_Source_Generation
                                 break;
                             case 2:
                                 className = (string)args[0].Value;
+                                mappingMode = (int)args[1].Value;
                                 break;
                         }
                     }
@@ -153,6 +172,9 @@ namespace LOGQ_Source_Generation
                                     case "factName":
                                         className = (string)typedConstant.Value;
                                         break;
+                                    case "mappingMode":
+                                        mappingMode = (int)typedConstant.Value;
+                                        break;
                                 }
                             }
                         }
@@ -166,29 +188,37 @@ namespace LOGQ_Source_Generation
                 var properties = new List<Property>(classMembers.Length);
 
                 Predicate<ISymbol> filter = member => false;
+                Func<ISymbol, ITypeSymbol> typeReciever = null;
 
                 switch (mappingMode)
                 {
                     case 0:
                         filter = member => PropertyFilter(member) && PublicityFilter(member);
+                        typeReciever = member => PropertyTypeReciever(member);
                         break;
                     case 1:
                         filter = member => PropertyFilter(member);
+                        typeReciever = member => PropertyTypeReciever(member);
                         break;
                     case 2:
                         filter = member => FieldFilter(member) && PublicityFilter(member);
+                        typeReciever = member => FieldTypeReciever(member);
                         break;
                     case 3:
                         filter = member => FieldFilter(member);
+                        typeReciever = member => FieldTypeReciever(member);
                         break;
                     case 4:
                         filter = member => (PropertyFilter(member) || FieldFilter(member)) && PublicityFilter(member);
+                        typeReciever = member => UniversalTypeReciever(member);
                         break;
                     case 5:
                         filter = member => PropertyFilter(member) || FieldFilter(member);
+                        typeReciever = member => UniversalTypeReciever(member);
                         break;
                     case 6:
                         filter = member => MarkedFilter(member);
+                        typeReciever = member => UniversalTypeReciever(member);
                         break;
                     default:
                         break;
@@ -199,7 +229,7 @@ namespace LOGQ_Source_Generation
                 {
                     if (filter(member))
                     {
-                        properties.Add(new Property(member.Name, ((IPropertySymbol)member).Type.ToDisplayString()));
+                        properties.Add(new Property(member.Name, typeReciever(member).ToDisplayString()));
                     }
                 }
 
