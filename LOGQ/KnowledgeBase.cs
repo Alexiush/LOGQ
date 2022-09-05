@@ -134,28 +134,27 @@ namespace LOGQ
             {
                 List<RuleWithBody> baseRules = _rules[ruleType].Where(rule => rule.Head.Equals(ruleHead)).ToList();
                 LogicalQuery innerQuery = null;
-                int offset = 0;
+                var enumerator = baseRules.GetEnumerator();
 
                 return new BacktrackIterator
                 (
                     () => {
                         while (true)
                         {
-                            if (offset == baseRules.Count)
+                            if (!enumerator.MoveNext())
                             {
                                 return null;
                             }
 
                             if (innerQuery is null)
                             {
-                                innerQuery = baseRules[offset].Body(ruleHead);
+                                innerQuery = enumerator.Current.Body(ruleHead);
                             }
 
                             bool result = innerQuery.Execute();
 
                             if (!result)
                             {
-                                offset++;
                                 innerQuery.Reset();
                                 innerQuery = null;
                                 continue;
@@ -164,7 +163,7 @@ namespace LOGQ
                             return copyStorage => result;
                         }
                     },
-                    () => { offset = 0;}
+                    () => { enumerator = baseRules.GetEnumerator(); }
                 );
             }
             else
