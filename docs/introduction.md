@@ -1,4 +1,4 @@
-# LOGQ
+# Introduction
 
 LOGQ stands for LOGical Query - it's logical programming tool that works similar to Prolog program.
 It's goal to simplify and extend prolog features and provide easy integration with mapping tool.
