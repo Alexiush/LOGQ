@@ -1,3 +1,9 @@
+---
+layout: default
+title: LOGQ
+nav_order: 1
+---
+
 # LOGQ Documentation
 
 [Introduction](https://alexiush.github.io/LOGQ/introduction.html)    
