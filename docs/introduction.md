@@ -1,3 +1,9 @@
+---
+layout: default
+title: Introduction
+nav_order: 2
+---
+
 # Introduction
 
 LOGQ stands for LOGical Query - it's logical programming tool that works similar to Prolog program.
