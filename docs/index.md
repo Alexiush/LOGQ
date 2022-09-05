@@ -1,5 +1,5 @@
-#LOGQ Documentation
+# LOGQ Documentation
 
-Introduction
-Guide
-Reference
+Introduction  
+Guide  
+Reference  
