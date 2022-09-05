@@ -40,11 +40,11 @@
   </PropertyGroup>
 	
   <ItemGroup>
-    <ProjectReference Include="D:\c sharp repos\LOGicalQuery\LOGQ\LOGQ Source Generation\LOGQ Source Generation\LOGQ Source Generation.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\LOGQ\LOGQ Source Generation\LOGQ Source Generation\LOGQ Source Generation.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 	
   <ItemGroup>
-	<Content Pack="True" PackagePath="analyzers\dotnet\cs" Include="D:\c sharp repos\LOGicalQuery\LOGQ\LOGQ Source Generation\LOGQ Source Generation\bin\Release\netstandard2.0\LOGQ Source Generation.dll" />
+	<Content Pack="True" PackagePath="analyzers\dotnet\cs" Include="..\..\LOGQ\LOGQ Source Generation\LOGQ Source Generation\bin\Release\netstandard2.0\LOGQ Source Generation.dll" />
   </ItemGroup>
 	
   <ItemGroup>
