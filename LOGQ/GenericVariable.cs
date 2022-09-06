@@ -257,6 +257,42 @@ namespace LOGQ
     }
 
     /// <summary>
+    /// Accepts only values that is equal to it's value
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
+    public sealed class Equal<T> : RuleVariable<T>
+    {
+        private protected Equal() { }
+
+        public Equal(T value)
+        {
+            Value = value;
+        }
+
+        public static bool operator ==(Equal<T> fact, BoundVariable<T> otherFact)
+        {
+            return fact.Value.Equals(otherFact.Value);
+        }
+
+        public static bool operator !=(Equal<T> fact, BoundVariable<T> otherFact)
+        {
+            return (fact == otherFact);
+        }
+
+        public override bool Equals(object obj)
+        {
+            BoundVariable<T> variable = obj as BoundVariable<T>;
+
+            if (obj is null)
+            {
+                return false;
+            }
+
+            return (Variable<T>)Value == variable.Value;
+        }
+    }
+
+    /// <summary>
     /// Accepts only values that is not equal to it's value
     /// </summary>
     /// <typeparam name="T">Underlying type</typeparam>
