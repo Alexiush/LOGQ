@@ -91,7 +91,7 @@ namespace LOGQ
         /// <exception cref="ArgumentException">
         /// When there is no facts of that type in a knowledge base
         /// </exception>
-        public List<Predicate<List<IBound>>> CheckForFacts(BoundFact sampleFact)
+        internal List<Predicate<List<IBound>>> CheckForFacts(BoundFact sampleFact)
         {
             List<Predicate<List<IBound>>> factCheckPredicates =
                 new List<Predicate<List<IBound>>>();
@@ -126,7 +126,7 @@ namespace LOGQ
         /// <exception cref="ArgumentException">
         ///  When there is no rules of that type in a knowledge base
         /// </exception>
-        public BacktrackIterator CheckForRules(BoundRule ruleHead)
+        internal BacktrackIterator CheckForRules(BoundRule ruleHead)
         {
             Type ruleType = ruleHead.RuleType();
 
