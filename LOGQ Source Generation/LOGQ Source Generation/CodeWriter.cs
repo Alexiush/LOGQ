@@ -322,22 +322,6 @@ namespace LOGQ_Source_Generation
             // Get Type
             sb.Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName));
 
-            // Bind
-            sb.Append(@"
-        public override void Bind(List<IBound> copyStorage)
-        {");
-
-            foreach (Property property in dataToGenerate.Properties)
-            {
-                sb.Append(@"
-            ")
-                .Append(property.PropertyName)
-                .Append($".UpdateValue(copyStorage, {property.PropertyName}.Value);");
-            }
-
-            sb.Append(@"
-        }");
-
             // End
 
             sb.Append(@"

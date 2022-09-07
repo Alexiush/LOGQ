@@ -44,10 +44,7 @@ namespace LOGQ
     /// <summary>
     /// Ryle with bound variables, used in queries 
     /// </summary>
-    public abstract class BoundRule : Rule
-    {
-        abstract public void Bind(List<IBound> copyStorage);
-    }
+    public abstract class BoundRule : Rule { }
 
     /// <summary>
     /// Class used to store rules in knowledge base.
