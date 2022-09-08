@@ -11,8 +11,8 @@ nav_order: 2
 
 Logical query is a main tool in LOGQ. Logical query builds a tree from chained logical statements (logical actions in LOGQ). 
 Logical query result shows if it can reach any leaf of a tree by proving each statement is true from a current state. When query is empty it always returns true.
-Otherwise, it uses search with backtracking to prove statements - that means it tries to go as deep in tree as it can before it will run out of proofs, 
-if it will state will be turned back to the moment before visiting last node(state reset applies only to [bound variables](https://alexiush.github.io/LOGQ/knowledge.html#variables)):
+Otherwise, it uses search with backtracking to prove statements - that means it tries to go as deep in the tree as it can before it will run out of proofs, 
+if it will, state will be turned back to the moment before visiting last node (state reset applies only to [bound variables](https://alexiush.github.io/LOGQ/knowledge.html#variables)):
 
 ![pIcTuRe](https://i.imgur.com/QgcnYe8.png)
 
@@ -27,7 +27,7 @@ However, on backtrack they're always reset populated with options again.
 
 ### Backtrack iterator
 
-While logical actions can't be created manually backtrack iterators can! Backtrack iterators used in logical actions to check for available proofs 
+While logical actions can't be created manually, backtrack iterators can! Backtrack iterators used in logical actions to check for available proofs 
 and can be used to create logical action. Bactrack iterators must contain two parts:
 - Generator function: function that iterates through available proofs and returns them or returns null when it ran out of options.
 - Reset action: function that changes generator state, so it can start over.
@@ -78,7 +78,7 @@ LogicalQuery query = new LogicalQuery()
 ### Negate function
 
 Negate function replaces backtrack iterator with it's negated version - now it needs to check 
-if statement can't be proved - all available options must return false:
+if the statement can't be proved - all available options must return false:
 
 ```cs
 LogicalQuery query = new LogicalQuery()
@@ -89,7 +89,7 @@ LogicalQuery query = new LogicalQuery()
 
 ### Branches
 
-Query can have multiple branches(chains of nodes in this context). Another branch is executed after previous branch ran out of options on all layers.
+A query can have multiple branches (chains of nodes in this context). Another branch is executed after the previous branch ran out of options on all layers.
 New branch can be declared through OrWith method - with OrWith node creation path from previous OrWith (or root) made as well and used to switch branch
 under condition mentioned above.
 
@@ -110,7 +110,7 @@ LogicalQuery query = new LogicalQuery()
 ### Logical query state
 
 Logical query state is pretty unusual:
-- Query remembers it's state, when executed again it continues to iterate through proofs - query that returns true on first (2nd, 3rd and so on) iterations
+- Query remembers its state, when executed again it continues to iterate through proofs - query that returns true on first (2nd, 3rd and so on) iterations
 can return false. To reset query Reset method used.
 - Query can't be modified after first execution. If you declare your query long before the execution and don't want it to be modified later use End method.
 
