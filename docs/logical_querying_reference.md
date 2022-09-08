@@ -11,11 +11,11 @@ nav_order: 2
 
 ### Logical actions and backtrack iterators
 
-Logical actions are nodes in query execution tree. They're iterating through predicates passed by backtrack iterator. 
+Logical actions are nodes in a query execution tree. They're iterating through predicates passed by backtrack iterator. 
 To instantiate an action backtrack iterator or supported initializer must be passed to one of the [logical query build methods](https://alexiush.github.io/LOGQ/logical_querying_reference.html#build-methods).
 
 Backtrack iterator controls two functions: generator and reset action:
-Generator iterates through predicates that can prove the statement associated with backtrack iterator. When there is no more predicates generator must return null.
+The generator iterates through predicates that can prove the statement associated with backtrack iterator. When there are no more predicates, generator must return null.
 Reset action modifies generator state, so it starts generating predicates from the very beginning again. 
 
 ```cs
@@ -171,7 +171,7 @@ Build methods add different logical actions to the query:
   }
   ```
   
-Also there are Not methods, that recieve input similar to With and OrWith and return [negated backtrack iterator](https://alexiush.github.io/LOGQ/logical_querying.html#negate-function).
+Also, there are Not methods, that recieve input similar to With and OrWith and return [negated backtrack iterator](https://alexiush.github.io/LOGQ/logical_querying.html#negate-function).
 ```cs
 namespace LOGQ.Extensions
 {
