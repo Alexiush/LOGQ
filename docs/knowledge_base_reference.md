@@ -7,6 +7,8 @@ nav_order: 1
 
 # Knowledge base
 
+> Reference does not provide full listing, but only mentioned parts, for full listing visit [LOGQ GitHub](https://github.com/Alexiush/LOGQ).
+
 ### Fact, Bound fact
 
 Fact - base class for facts. FactType method must return base type of the fact 
