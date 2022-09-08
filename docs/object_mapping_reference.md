@@ -16,7 +16,7 @@ It has two parameters:
 - factName - suffix for generated fact classes (required)
 - mappingMode - which class members will be considered fact members (optional)
 
-Backing fields won`t be mapped in any mode, MappingMode.MarkedData stands for members marked with LOGQ.FactMemberAttribute.
+Backing fields won't be mapped in any mode, MappingMode.MarkedData stands for members marked with LOGQ.FactMemberAttribute.
 
 ```cs
 public enum MappingMode
