@@ -11,7 +11,7 @@ nav_order: 1
 
 ### Fact, Bound fact
 
-Fact - base class for facts. FactType method must return base type of the fact 
+Fact - base class for facts. FactType method must return the base type of the fact 
 (to compare same base type facts with knowledge base, when class created manually must return fact class).
 == and != operators used for fact to fact comparison.
 
@@ -22,7 +22,7 @@ public abstract class Fact
 }
 ```
 
-BoundFact - base class for bound facts, used in queries. FactType method must return base type of the fact 
+BoundFact - base class for bound facts, used in queries. FactType method must return the base type of the fact 
 (to compare same base type facts with knowledge base, when class created manually must return fact class).
 Bind method used to bind values to matched facts, needs fact to bound to and journal to make records about changes.
 Equals method, == and != operators used for bound fact to bound fact, bound fact to fact comparison.
@@ -36,7 +36,7 @@ public abstract class BoundFact : Fact
 
 ### Rule, Bound rule, Rule with body
 
-Rule - base class for rule patterns. RuleType method must return base type of the rule.
+Rule - base class for rule patterns. RuleType method must return the base type of the rule.
 (to compare same base type rules with knowledge base, when class created manually must return rule class).
 Equals method, == and != operators used for rule to rule comparison.
 
@@ -47,7 +47,7 @@ public abstract class Rule
 }
 ```
 
-BoundRule - base class for bound rule, used in queries. RuleType method must return base type of the rule.
+BoundRule - base class for bound rule, used in queries. RuleType method must return the base type of the rule.
 (to compare same base type rules with knowledge base, when class created manually must return rule class).
 Bind method used to bind values to matched rules, needs journal to make records about changes.
 Equals method, == and != operators used for bound rule to bound rule, bound rule to rule comparison.
@@ -78,7 +78,7 @@ public interface IVariable { }
 ```
 
 IBound - interface for variables that journal their state. Any class that implements IBound 
-needs to provide Rollback method implementation that will return value to it's previous state.
+needs to provide Rollback method implementation that will return a value to its previous state.
 
 ```cs
 public interface IBound { public void Rollback(); }
