@@ -7,6 +7,8 @@ nav_order: 3
 
 # Object mapping
 
+> Reference does not provide full listing, but only mentioned parts, for full listing visit [LOGQ GitHub](https://github.com/Alexiush/LOGQ).
+
 ### Marker attribute
 
 Marker attribute LOGQ.FactAttribute marks classes that will be mapped to Fact, BoundFact, Rule, BoundRule via source generation.
