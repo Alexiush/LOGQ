@@ -40,24 +40,22 @@ It consists of generator function and reset action:
 
 ```csharp
 // Backtrack iterator made for previous example
-// Predicate is inside List<Predicate<List<IBound>>> actionInitializer
+// Predicate is inside ICollection<Predicate<List<IBound>>> actionInitializer
 
-int offset = 0;
+var enumerator = actionInitializer.GetEnumerator();
 
-BacktrackIterator iterator = new BacktrackIterator(
-    () => {
-        if (offset >= actionInitializer.Count)
+_iterator = new BacktrackIterator(
+    () =>
+    {   
+        if (!enumerator.MoveNext())
         {
             return null;
         }
 
-        Predicate<List<IBound>> predicate =
-            actionInitializer[offset];
-
-        offset++;
+        Predicate<List<IBound>> predicate = enumerator.Current;
         return predicate;
     },
-    () => offset = 0
+    () => enumerator = actionInitializer.GetEnumerator()
 ); 
 ```
 
