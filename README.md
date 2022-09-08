@@ -3,6 +3,9 @@
 LOGQ stands for LOGical Query - it's logical programming tool that works similar to Prolog program. 
 It's goal to simplify and extend prolog features and provide easy integration with mapping tool.
 
+[Documentation](https://alexiush.github.io/LOGQ/)
+[NuGet package](https://www.nuget.org/packages/LOGQ/1.0.0)
+
 ## Usage
 ### Logical query
 Main feature is creating logical queries. They're built as trees with nodes represented by logical actions.
