@@ -8,8 +8,8 @@ nav_order: 1
 # Knowledge, facts and rules
 
 In logical programming data about domain presented with facts and rules:  
-- Facts are plain data, each fact is represented by named set of values. To prove that fact is true fact with exact same values is needed.  
-- Rules are data described by pattern and proof. To prove that rule is true on some set of values proof for some matching mattern must be true.
+- Facts are plain data, each fact is represented by a named set of values. To prove that fact is true fact with exact same values is needed.  
+- Rules are data described by pattern and proof. To prove that rule is true on some set of values, proof for some matching pattern must be true.
 
 ### Facts
 
@@ -49,7 +49,7 @@ public class FactStudent : LOGQ.Fact
 ```
 
 Facts used in queries are different. They are called BoundFacts as their variables can be bound to new values during logical query execution. 
-Bound facts also implement Equals operator used to compare them to facts. When bound fact matches fact all of it's values must be bound to values of matched fact
+Bound facts also implement Equals operator used to compare them to facts. When bound fact matches fact, all of its values must be bound to values of the matched fact
 for what we need to define Bind method.
 
 ```cs
@@ -122,7 +122,7 @@ public class BoundFactStudent : LOGQ.BoundFact
 
 ### Rules
 
-Rules are defined by RuleWithBody class, instances of which are made with rule pattern (Rule class) and function that recieves BoundRule (from query) and returns
+Rules are defined by RuleWithBody class, instances of which are made with rule pattern (Rule class) and function that receives BoundRule (from query) and returns
 logical query that proves or disproves that rule is appropriate. 
 
 ```cs
@@ -274,7 +274,7 @@ public class BoundRuleStudent : LOGQ.BoundRule
 
 There are different types of variables and most of which have been described above:
 - Variable<T>: just a value container, needs to have a value
-- BoundVariable<T>: value container that journals it's value changes, needs to have a value
+- BoundVariable<T>: value container that journals its value changes, needs to have a value
 - UnboundVariable<T>: BoundVariable that is not bound yet, can't have initial value
 - RuleVariable<T>: base class for rule patterns, allows own pattern definition:
   - AnyValue<T>: any value is accepted, can't have a value
@@ -301,7 +301,7 @@ RuleStudent rule = new RuleStudent(new AnyValue<string>(), new NotEqual<int>(1))
 
 LOGQ contains [source generator](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview).
 It can automatically map your classes to fact classes: Fact, BoundFact, Rule, BoundRule. It's highly recommended to use as usually 
-you would need standard behaviour for your facts and it's the best way to get it.
+you would need standard behaviour for your facts, and it's the best way to get it.
 
 Classes to be mapped must be marked with marker attribute LOGQ.Fact. It requires factName - suffix for class names and has optional mapping mode:
 PublicProperties(default), AllProperties, PublicFields, AllFields, PublicPropertiesAndFields, AllPropertiesAndFields, MarkedData(members marked by LOGQ.FactMember).
