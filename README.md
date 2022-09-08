@@ -4,7 +4,7 @@ LOGQ stands for LOGical Query - it's logical programming tool that works similar
 It's goal to simplify and extend prolog features and provide easy integration with mapping tool.
 
 [Documentation](https://alexiush.github.io/LOGQ/)  
-[NuGet package](https://www.nuget.org/packages/LOGQ/1.0.0)
+[NuGet package](https://www.nuget.org/packages/LOGQ)
 
 ## Usage
 ### Logical query
