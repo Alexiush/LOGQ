@@ -261,12 +261,6 @@ public class BoundRuleStudent : LOGQ.BoundRule
     {
         return typeof(LOGQ_Examples.ExampleSearchForStudent.Student);
     }
-
-    public override void Bind(List<IBound> copyStorage)
-    {
-        Name.UpdateValue(copyStorage, Name.Value);
-        Grade.UpdateValue(copyStorage, Grade.Value);
-    }
 }
 ```
 
@@ -279,6 +273,7 @@ There are different types of variables and most of which have been described abo
 - RuleVariable<T>: base class for rule patterns, allows own pattern definition:
   - AnyValue<T>: any value is accepted, can't have a value
   - AnyValueBound<T>: any value except unbound variable is accepted, can't have a value
+  - Equal<T>: only value that is equal to the pattern value, needs to have a value
   - NotEqual<T>: any value that is not equal to the pattern value, needs to have a value
   - NotEqualBound<T>: any value that is not equal to the pattern value and bound, needs to have a value 
   - UnboundValue<T>: only unbound variables, can't have a value
