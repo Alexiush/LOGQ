@@ -153,7 +153,7 @@ namespace LOGQ
             /// <returns>Success of cut action</returns>
             public bool Cut()
             {
-                Node pointer = stateNode.parent;
+                Node pointer = stateNode;
 
                 while (pointer != stateNode.localRoot)
                 {
