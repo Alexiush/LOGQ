@@ -50,7 +50,7 @@ namespace LOGQ
         {
             Variable<T> variable = obj as Variable<T>;
 
-            if (obj is null)
+            if (variable is null)
             {
                 return false;
             }
@@ -140,7 +140,7 @@ namespace LOGQ
         {
             Variable<T> variable = obj as Variable<T>;
 
-            if (obj is null)
+            if (variable is null)
             {
                 return false;
             }
@@ -180,7 +180,7 @@ namespace LOGQ
         {
             BoundVariable<T> variable = obj as BoundVariable<T>;
 
-            if (obj is null)
+            if (variable is null)
             {
                 return false;
             }
@@ -211,7 +211,7 @@ namespace LOGQ
         {
             BoundVariable<T> variable = obj as BoundVariable<T>;
 
-            if (obj is null)
+            if (variable is null)
             {
                 return false;
             }
@@ -247,7 +247,7 @@ namespace LOGQ
         {
             BoundVariable<T> variable = obj as BoundVariable<T>;
 
-            if (obj is null)
+            if (variable is null)
             {
                 return false;
             }
@@ -283,7 +283,7 @@ namespace LOGQ
         {
             BoundVariable<T> variable = obj as BoundVariable<T>;
 
-            if (obj is null)
+            if (variable is null)
             {
                 return false;
             }
@@ -319,7 +319,7 @@ namespace LOGQ
         {
             BoundVariable<T> variable = obj as BoundVariable<T>;
 
-            if (obj is null)
+            if (variable is null)
             {
                 return false;
             }
@@ -348,7 +348,7 @@ namespace LOGQ
         {
             BoundVariable<T> variable = obj as BoundVariable<T>;
 
-            if (obj is null)
+            if (variable is null)
             {
                 return false;
             }
