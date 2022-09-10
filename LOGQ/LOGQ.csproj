@@ -24,7 +24,7 @@
     <Description>Logical programming tool with Prolog-styled features and object to fact mapping.</Description>
     <RepositoryUrl>https://github.com/Alexiush/LOGQ</RepositoryUrl>
     <Authors>Alexiush</Authors>
-    <PackageTags>logical programming, backtracking</PackageTags>
+    <PackageTags>logical-programming, backtracking</PackageTags>
 	<EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -37,6 +37,10 @@
   <PropertyGroup>
 	<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
 	<PackageIcon>LogqIcon.png</PackageIcon>
+	<PackageReleaseNotes>- Added multiple mapping modes
+- New rule patterns
+- Minor fixes</PackageReleaseNotes>
+	<Version>1.1.0</Version>
   </PropertyGroup>
 	
   <ItemGroup>
