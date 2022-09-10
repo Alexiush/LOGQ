@@ -587,8 +587,7 @@ namespace LOGQ
         {
             CheckIfCanBuild();
 
-            bool madeCut = false;
-            return With(copyStorage =>  madeCut ? madeCut : _tree.Cut());
+            return With(copyStorage =>  _tree.Cut());
         }
 
         /// <summary>
