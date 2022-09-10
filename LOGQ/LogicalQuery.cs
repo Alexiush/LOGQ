@@ -153,15 +153,15 @@ namespace LOGQ
             /// <returns>Success of cut action</returns>
             public bool Cut()
             {
-                Node pointer = currentNode.parent;
+                Node pointer = stateNode.parent;
 
-                while (pointer != currentNode.localRoot)
+                while (pointer != stateNode.localRoot)
                 {
                     pointer.isHidden = true;
                     pointer = pointer.parent;
                 }
 
-                currentNode.parent = pointer;
+                stateNode.parent = pointer;
                 return true;
             }
 
