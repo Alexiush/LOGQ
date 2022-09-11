@@ -74,6 +74,7 @@ namespace LOGQ
 
             while (predicate != null)
             {
+                ResetBounds();
                 if (predicate.Invoke(_boundsCopy))
                 {
                     // Bounds for good approach are saved
@@ -81,7 +82,6 @@ namespace LOGQ
                 }
 
                 // Bounds for bad approach are turned back
-                ResetBounds();
                 predicate = _iterator.GetNext();
             }
 
