@@ -129,15 +129,23 @@ namespace LOGQ
 
             if (_rules.ContainsKey(ruleType))
             {
-                List<RuleWithBody> baseRules = _rules[ruleType].Where(rule => rule.Head.Equals(ruleHead)).ToList();
+                List<RuleWithBody> rulesFiltered = _rules[ruleType].Where(rule => rule.Head.Equals(ruleHead)).ToList();
                 LogicalQuery innerQuery = null;
-                var enumerator = baseRules.GetEnumerator();
+                bool enumeratorIsUpToDate = false;
+                var enumerator = rulesFiltered.GetEnumerator();
 
                 return new BacktrackIterator
                 (
                     () => {
                         while (true)
                         {
+                            if (!enumeratorIsUpToDate)
+                            {
+                                rulesFiltered = _rules[ruleType].Where(rule => rule.Head.Equals(ruleHead)).ToList();
+                                enumerator = rulesFiltered.GetEnumerator();
+                                enumeratorIsUpToDate = true;
+                            }
+
                             if (!enumerator.MoveNext())
                             {
                                 return null;
@@ -160,7 +168,7 @@ namespace LOGQ
                             return copyStorage => result;
                         }
                     },
-                    () => { enumerator = baseRules.GetEnumerator(); }
+                    () => { enumeratorIsUpToDate = false; }
                 );
             }
             else
