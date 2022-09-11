@@ -70,21 +70,30 @@ namespace LOGQ
         /// <returns>true if there is a true action, false if there is no more true actions</returns>
         public virtual bool GetNext()
         {
-            Predicate<List<IBound>> predicate = _iterator.GetNext(); 
+            Predicate<List<IBound>> predicate = _iterator.GetNext();
+            bool madeReset = false;
 
             while (predicate != null)
             {
-                ResetBounds();
+                if (!madeReset)
+                {
+                    ResetBounds();
+                }
+
                 if (predicate.Invoke(_boundsCopy))
                 {
                     // Bounds for good approach are saved
+                    madeReset = false;
                     return true;
                 }
 
                 // Bounds for bad approach are turned back
+                ResetBounds();
+                madeReset = true;
                 predicate = _iterator.GetNext();
             }
 
+            madeReset = false;
             return false;
         }
     }
