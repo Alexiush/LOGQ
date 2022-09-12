@@ -24,11 +24,18 @@ namespace LOGQ
 
         internal LogicalAction(ICollection<Predicate<List<IBound>>> actionInitializer)
         {
+            bool enumeratorIsUpToDate = false;
             var enumerator = actionInitializer.GetEnumerator();
 
             _iterator = new BacktrackIterator(
                 () =>
-                {   
+                {
+                    if (!enumeratorIsUpToDate)
+                    {
+                        enumerator = actionInitializer.GetEnumerator();
+                        enumeratorIsUpToDate = true;
+                    }
+
                     if (!enumerator.MoveNext())
                     {
                         return null;
@@ -37,7 +44,7 @@ namespace LOGQ
                     Predicate<List<IBound>> predicate = enumerator.Current;
                     return predicate;
                 },
-                () => enumerator = actionInitializer.GetEnumerator()
+                () => enumeratorIsUpToDate = false
             ); 
         }
 
