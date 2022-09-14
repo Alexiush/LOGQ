@@ -176,6 +176,7 @@ namespace LOGQ
                     pointer.isHidden = true;
                     pointer = pointer.parent;
                 }
+                pointer.isHidden = true;
 
                 stateNode.parent = pointer;
                 return true;
