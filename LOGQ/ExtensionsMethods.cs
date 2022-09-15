@@ -29,6 +29,33 @@ namespace LOGQ.Extensions
             => Not(new List<Predicate<List<IBound>>> { actionToTry });
 
         /// <summary>
+        /// Negates logical action created from predicate without storage
+        /// </summary>
+        /// <param name="actionToTry">Predicate that defines available action</param>
+        /// <returns>Negated logical action (returns true only if all actions return false)</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static LogicalAction Not(Func<bool> actionToTry)
+            => Not(copyStorage => actionToTry());
+
+        /// <summary>
+        /// Negates logical action created from action that uses copy storage
+        /// </summary>
+        /// <param name="actionToTry">Predicate that defines available action</param>
+        /// <returns>Negated logical action (returns true only if all actions return false)</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static LogicalAction Not(Action<List<IBound>> actionToTry)
+            => Not(new List<Predicate<List<IBound>>> { copyStorage => { actionToTry(copyStorage); return true; } });
+
+        /// <summary>
+        /// Negates logical action created from action
+        /// </summary>
+        /// <param name="actionToTry">Predicate that defines available action</param>
+        /// <returns>Negated logical action (returns true only if all actions return false)</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static LogicalAction Not(Action actionToTry)
+            => Not(new List<Predicate<List<IBound>>> { copyStorage => { actionToTry(); return true; } });
+
+        /// <summary>
         /// Negates logical action created from backtrack iterator
         /// </summary>
         /// <param name="iterator">Underlying backtrack iterator</param>
