@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace LOGQ
 {
@@ -407,6 +408,7 @@ namespace LOGQ
         /// <param name="actionInitializer">Predicate used to create an action</param>
         /// <param name="pathDirection">May it be added to the current branch or or branch</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private LogicalQuery AddNode(Predicate<List<IBound>> actionInitializer, bool pathDirection)
         {
             List<Predicate<List<IBound>>> list =
@@ -422,6 +424,7 @@ namespace LOGQ
         /// <param name="knowledgeBase">Knowledge base used for rule-check</param>
         /// <param name="pathDirection">May it be added to the current branch or or branch</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private LogicalQuery AddNode(BoundRule rule, KnowledgeBase knowledgeBase, bool pathDirection)
         {
             return AddNode(knowledgeBase.CheckForRules(rule), pathDirection);
@@ -434,6 +437,7 @@ namespace LOGQ
         /// <param name="knowledgeBase">Knowledge base used for fact-checking</param>
         /// <param name="pathDirection">May it be added to the current branch or or branch</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private LogicalQuery AddNode(BoundFact fact, KnowledgeBase knowledgeBase, bool pathDirection)
         {
             return AddNode(knowledgeBase.CheckForFacts(fact), pathDirection);
@@ -444,6 +448,7 @@ namespace LOGQ
         /// </summary>
         /// <param name="action">Logical action</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery With(LogicalAction action)
         {
             return AddNode(action, true);
@@ -454,6 +459,7 @@ namespace LOGQ
         /// </summary>
         /// <param name="iterator">Iterator used to create an action</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery With(BacktrackIterator iterator)
         { 
             return AddNode(iterator, true);
@@ -464,6 +470,7 @@ namespace LOGQ
         /// </summary>
         /// <param name="actionInitializer">List of predicates used to create an action</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery With(ICollection<Predicate<List<IBound>>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
@@ -474,6 +481,7 @@ namespace LOGQ
         /// </summary>
         /// <param name="actionInitializer">Predicate used to create an action</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery With(Predicate<List<IBound>> actionInitializer)
         {
             return AddNode(actionInitializer, true);
@@ -486,6 +494,7 @@ namespace LOGQ
         /// <param name="rule">Rule to be checked</param>
         /// <param name="knowledgeBase">Knowledge base used for rule-checking</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery With(BoundRule rule, KnowledgeBase knowledgeBase)
         {
             return AddNode(rule, knowledgeBase, true);
@@ -497,6 +506,7 @@ namespace LOGQ
         /// <param name="fact">Fact to be checked</param>
         /// <param name="knowledgeBase">Knowledge base used for fact-checking</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery With(BoundFact fact, KnowledgeBase knowledgeBase)
         {
             return AddNode(fact, knowledgeBase, true);
@@ -507,6 +517,7 @@ namespace LOGQ
         /// </summary>
         /// <param name="action">Logical action</param>
         /// <returns>Modified Logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery OrWith(LogicalAction action)
         {
             return AddNode(action, false);
@@ -517,6 +528,7 @@ namespace LOGQ
         /// </summary>
         /// <param name="iterator">Iterator used to create an action</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery OrWith(BacktrackIterator iterator)
         {
             return AddNode(iterator, false);
@@ -527,6 +539,7 @@ namespace LOGQ
         /// </summary>
         /// <param name="actionInitializer">List of predicates used to create an action</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery OrWith(ICollection<Predicate<List<IBound>>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
@@ -537,6 +550,7 @@ namespace LOGQ
         /// </summary>
         /// <param name="actionInitializer">Predicate used to create an action</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery OrWith(Predicate<List<IBound>> actionInitializer)
         {
             return AddNode(actionInitializer, false);
@@ -548,6 +562,7 @@ namespace LOGQ
         /// <param name="rule">Rule to be checked</param>
         /// <param name="knowledgeBase">Knowledge base used for rule-checking</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery OrWith(BoundRule rule, KnowledgeBase knowledgeBase)
         {
             return AddNode(rule, knowledgeBase, false);
@@ -559,6 +574,7 @@ namespace LOGQ
         /// <param name="fact">Fact to be checked</param>
         /// <param name="knowledgeBase">Knowledge base used for fact-checking</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery OrWith(BoundFact fact, KnowledgeBase knowledgeBase)
         {
             return AddNode(fact, knowledgeBase, false);
@@ -569,6 +585,7 @@ namespace LOGQ
         /// </summary>
         /// <param name="innerQuery">Query that will run in the inner scope</param>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery WithScoped(LogicalQuery innerQuery)
         {
             CheckIfCanBuild();
@@ -600,6 +617,7 @@ namespace LOGQ
         /// so as soon as some branch gets succesful and query gets to cut layer - it never goes back
         /// </summary>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery Cut()
         {
             CheckIfCanBuild();
@@ -611,6 +629,7 @@ namespace LOGQ
         /// Adds action that always returns false
         /// </summary>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery Fail()
         {
             CheckIfCanBuild();
@@ -622,6 +641,7 @@ namespace LOGQ
         /// Adds action that always returns true
         /// </summary>
         /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery Succeed()
         {
             CheckIfCanBuild();
