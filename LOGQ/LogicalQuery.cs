@@ -121,55 +121,39 @@ namespace LOGQ
     public class LogicalQuery
     {
         /// <summary>
-        /// Class that represents query structure
+        /// Class that represents node(action) in query tree
         /// </summary>
-        class QueryTree
+        public class Node
         {
-            public QueryTree() { }
-            
-            /// <summary>
-            /// Class that represents node(action) in query tree
-            /// </summary>
-            public class Node
+            public Node parent;
+
+            public LogicalAction boundAction;
+
+            public Node nextOnTrue;
+            public Node nextOnFalse;
+            public Node localRoot;
+
+            public bool isHidden = false;
+            public bool wentFalse = false;
+
+            public Node() { }
+
+            public Node(LogicalAction boundAction, Node parent, Node localRoot)
             {
-                public Node parent;
-
-                public LogicalAction boundAction;
-
-                public Node nextOnTrue;
-                public Node nextOnFalse;
-                public Node localRoot;
-
-                public bool isHidden = false;
-                public bool wentFalse = false;
-
-                public Node() { }
-
-                public Node(LogicalAction boundAction, Node parent, Node localRoot)
-                {
-                    this.boundAction = boundAction;
-                    this.parent = parent;
-                    this.localRoot = localRoot;
-                }
+                this.boundAction = boundAction;
+                this.parent = parent;
+                this.localRoot = localRoot;
             }
+        }
 
+        /// <summary>
+        /// Class that builds query tree
+        /// </summary>
+        class QueryTreeBuilder
+        {
             private Node currentNode = null;
             private Node rootGlobal = null;
             private Node rootLocal = null;
-
-            private Node stateNode = null;
-
-            /// <summary>
-            /// Restructures query tree when cut node is triggered
-            /// </summary>
-            /// <returns>Success of cut action</returns>
-            public bool Cut()
-            {
-                stateNode.localRoot.isHidden = true;
-                stateNode.parent = stateNode.localRoot;
-                
-                return true;
-            }
 
             /// <summary>
             /// Sets global entry point of query
@@ -222,12 +206,43 @@ namespace LOGQ
 
                 if (rootLocal is null)
                 {
-                    throw new InvalidOperationException("Can't add or branch without main branch"); 
+                    throw new InvalidOperationException("Can't add or branch without main branch");
                 }
 
                 rootLocal.nextOnFalse = newNode;
                 SetLocalRoot(newNode);
                 currentNode = newNode;
+            }
+
+            public QueryTree Build()
+            {
+                return new QueryTree(rootGlobal);
+            }
+        }
+
+        /// <summary>
+        /// Class that represents query structure
+        /// </summary>
+        class QueryTree
+        {
+            public QueryTree(Node rootGlobal) 
+            { 
+                this.rootGlobal = rootGlobal;
+            }
+
+            private Node stateNode = null;
+            private Node rootGlobal = null;
+
+            /// <summary>
+            /// Restructures query tree when cut node is triggered
+            /// </summary>
+            /// <returns>Success of cut action</returns>
+            public bool Cut()
+            {
+                stateNode.localRoot.isHidden = true;
+                stateNode.parent = stateNode.localRoot;
+                
+                return true;
             }
 
             /// <summary>
@@ -319,6 +334,7 @@ namespace LOGQ
             }
         }
 
+        private QueryTreeBuilder _builder;
         private QueryTree _tree;
         private bool _finishedBuilding = false;
 
@@ -328,7 +344,7 @@ namespace LOGQ
         /// </summary>
         public LogicalQuery() 
         {
-            _tree = new QueryTree();
+            _builder = new QueryTreeBuilder();
         }
 
         /// <summary>
@@ -337,8 +353,12 @@ namespace LOGQ
         /// <returns></returns>
         public LogicalQuery End()
         {
-            _finishedBuilding = true;
+            if (_tree is null)
+            {
+                _tree = _builder.Build();
+            }
 
+            _finishedBuilding = true;
             return this;
         }
 
@@ -368,11 +388,11 @@ namespace LOGQ
 
             if (pathDirection)
             {
-                _tree.Add(action);
+                _builder.Add(action);
             }
             else
             {
-                _tree.AddFalse(action);
+                _builder.AddFalse(action);
             }
             return this;
         }
