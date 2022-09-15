@@ -125,12 +125,7 @@ namespace LOGQ
         /// </summary>
         class QueryTree
         {
-            LogicalQuery query;
-
-            public QueryTree(LogicalQuery query)
-            {
-                this.query = query;
-            }
+            public QueryTree() { }
             
             /// <summary>
             /// Class that represents node(action) in query tree
@@ -243,6 +238,15 @@ namespace LOGQ
             }
 
             /// <summary>
+            /// Initiates action rollback
+            /// </summary>
+            /// <param name="action">Action to be rolled back</param>
+            private void ContextRollback(LogicalAction action)
+            {
+                action.Rollback();
+            }
+
+            /// <summary>
             /// Starts query execution - searching for completely true path in query tree
             /// </summary>
             /// <returns>Query execution result</returns>
@@ -285,7 +289,7 @@ namespace LOGQ
                         return false;
                     }
 
-                    query.ContextRollback(stateNode.boundAction);
+                    ContextRollback(stateNode.boundAction);
                     stateNode = stateNode.parent;
                 }
 
@@ -331,7 +335,7 @@ namespace LOGQ
         /// </summary>
         public LogicalQuery() 
         {
-            _tree = new QueryTree(this);
+            _tree = new QueryTree();
         }
 
         /// <summary>
@@ -676,15 +680,6 @@ namespace LOGQ
             CheckIfCanBuild();
 
             return With(copyStorage => true);
-        }
-
-        /// <summary>
-        /// Initiates action rollback
-        /// </summary>
-        /// <param name="action">Action to be rolled back</param>
-        private void ContextRollback(LogicalAction action)
-        {
-            action.Rollback();
         }
 
         /// <summary>
