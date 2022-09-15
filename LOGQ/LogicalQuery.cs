@@ -429,9 +429,45 @@ namespace LOGQ
         private LogicalQuery AddNode(Predicate<List<IBound>> actionInitializer, bool pathDirection)
         {
             List<Predicate<List<IBound>>> list =
-                new List<Predicate<List<IBound>>>(new[] { actionInitializer });
+                new List<Predicate<List<IBound>>>{ actionInitializer };
 
             return AddNode(list, pathDirection);
+        }
+
+        /// <summary>
+        /// Adds logical action based on single predicate without storage
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private LogicalQuery AddNode(Func<bool> actionInitializer, bool pathDirection)
+        {
+            return AddNode(copyStorage => actionInitializer(), pathDirection);
+        }
+
+        /// <summary>
+        /// Adds logical action based on single action that uses copy storage
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private LogicalQuery AddNode(Action<List<IBound>> actionInitializer, bool pathDirection)
+        {
+            return AddNode(copyStorage => { actionInitializer(copyStorage); return true; }, pathDirection);
+        }
+
+        /// <summary>
+        /// Adds logical action based on single action
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private LogicalQuery AddNode(Action actionInitializer, bool pathDirection)
+        {
+            return AddNode(copyStorage => { actionInitializer(); return true; }, pathDirection);
         }
 
         /// <summary>
@@ -504,6 +540,38 @@ namespace LOGQ
             return AddNode(actionInitializer, true);
         }
 
+        /// <summary>
+        /// Adds action based on predicate without storage
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery With(Func<bool> actionInitializer)
+        {
+            return AddNode(copyStorage => actionInitializer(), true);
+        }
+
+        /// <summary>
+        /// Adds action based on action that uses copy storage
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery With(Action<List<IBound>> actionInitializer)
+        {
+            return AddNode(actionInitializer, true);
+        }
+
+        /// <summary>
+        /// Adds action based on action
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery With(Action actionInitializer)
+        {
+            return AddNode(actionInitializer, true);
+        }
 
         /// <summary>
         /// Adds action based on rule-checking
@@ -569,6 +637,39 @@ namespace LOGQ
         /// <returns>Modified logical query</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery OrWith(Predicate<List<IBound>> actionInitializer)
+        {
+            return AddNode(actionInitializer, false);
+        }
+
+        /// <summary>
+        /// Adds action based on predicate without storage to another branch
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery OrWith(Func<bool> actionInitializer)
+        {
+            return AddNode(copyStorage => actionInitializer(), false);
+        }
+
+        /// <summary>
+        /// Adds action based on action that uses copy storage to another branch
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery OrWith(Action<List<IBound>> actionInitializer)
+        {
+            return AddNode(actionInitializer, false);
+        }
+
+        /// <summary>
+        /// Adds action based on action to another branch
+        /// </summary>
+        /// <param name="actionInitializer">Predicate used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery OrWith(Action actionInitializer)
         {
             return AddNode(actionInitializer, false);
         }
