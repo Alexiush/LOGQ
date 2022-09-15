@@ -609,6 +609,35 @@ namespace LOGQ
             ));
         }
 
+        /// <summary>
+        /// Adds action based on scoped query to another branch
+        /// </summary>
+        /// <param name="innerQuery">Query that will run in the inner scope</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery OrWithScoped(LogicalQuery innerQuery)
+        {
+            CheckIfCanBuild();
+
+            bool metTerminalCondition = false;
+
+            return OrWith(new BacktrackIterator(
+                () => {
+                    if (metTerminalCondition)
+                    {
+                        return null;
+                    }
+
+                    metTerminalCondition = !innerQuery.Execute();
+                    return copyStorage => !metTerminalCondition;
+                },
+                () => {
+                    innerQuery.Reset();
+                    metTerminalCondition = false;
+                }
+            ));
+        }
+
 
         /// <summary>
         /// Adds layer of one action that always succeeds,
