@@ -134,7 +134,6 @@ namespace LOGQ
             public Node localRoot;
 
             public bool isHidden = false;
-            public bool wentFalse = false;
 
             public Node() { }
 
@@ -283,11 +282,11 @@ namespace LOGQ
                             continue;
                         }
 
-                        if (stateNode.nextOnFalse != null && !stateNode.wentFalse)
+                        if (stateNode.nextOnFalse != null)
                         {
-                            stateNode.wentFalse = true;
                             prevNode = stateNode;
                             stateNode = stateNode.nextOnFalse;
+                            Cut();
                             continue;
                         }
                     }
@@ -318,7 +317,6 @@ namespace LOGQ
 
                 node.boundAction.Rollback();
                 node.isHidden = false;
-                node.wentFalse = false;
 
                 ResetNode(node.nextOnTrue);
                 ResetNode(node.nextOnFalse);
