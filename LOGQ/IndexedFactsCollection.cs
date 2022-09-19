@@ -5,57 +5,43 @@ using System.Text;
 
 namespace LOGQ
 {
-    internal struct Cluster
+    /// <summary>
+    /// Cluster of facts that share same hash for some value
+    /// </summary>
+    public struct Cluster<T>
     {
-        public HashSet<int> indices;
+        private List<T> objects = new List<T>();
+
+        public Cluster() { }
+
+        public int Size { get { return objects.Count; } }
+
+        public void Add(T obj)
+        {
+            objects.Add(obj);
+        }
+
+        public List<T> GetValues()
+            => objects.ToList();
     }
 
-    // Both indexed collections only can be generated to get properties lists
-
-    internal class IndexedFactsCollection
+    /// <summary>
+    /// Collection that provides fast access to facts that possibly fit the sample
+    /// </summary>
+    public interface IIndexedFactsCollection
     {
-        private List<Fact> facts;
-        private HashSet<Fact> factSet;
-        
-        // Dictionary of clusters for each variable
-        // Dictionary<int, Cluster> 
+        public void Add(Fact fact);
 
-        public void Add(Fact fact)
-        {
-            // Add element to list
-            facts.Add(fact);
-            // Add element to hashSet
-            factSet.Add(fact);
-
-            // for each fact property - get hashcode, add index to cluster
-            // propertyDict[property.GetHashCode()].indices.Add(facts.Last())
-        }
-
-        public List<Fact> FromCluster(Cluster cluster)
-        {
-            return cluster.indices.Select(index => facts[index]).ToList();
-        }
-
-        public List<Fact> FilteredBySample(BoundFact sample)
-        {
-            // Check if all variables are bound
-            // if so - check in a hashSet
-            // otherwise - return best cluster (based on bound variables)
-            throw new NotImplementedException();
-        }
+        public List<Fact> FilteredBySample(BoundFact sample);
     }
 
-    internal class IndexedRulesCollection
+    /// <summary>
+    /// Collection that provides fast access to rules that possibly fit the sample
+    /// </summary>
+    public interface IIndexedRulesCollection
     {
-        public void Add()
-        {
-            // Add element to list
-        }
+        public void Add(RuleWithBody rule);
 
-        public List<Rule> FilteredBySample()
-        {
-            // Just return filtered list
-            throw new NotImplementedException();
-        }
+        public List<RuleWithBody> FilteredByPattern(BoundRule pattern);
     }
 }

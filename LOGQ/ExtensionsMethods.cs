@@ -74,7 +74,27 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogicalAction Not(BoundFact fact, KnowledgeBase knowledgeBase)
-            => Not(knowledgeBase.CheckForFacts(fact));
+        {
+            bool hasConsulted = false;
+            BacktrackIterator factsIterator = null;
+
+            BacktrackIterator iterator = new BacktrackIterator(
+                () =>
+                {
+                    if (!hasConsulted)
+                    {
+                        factsIterator = new BacktrackIterator(knowledgeBase.CheckForFacts(fact));
+                        hasConsulted = true;
+                    }
+
+                    return factsIterator.GetNext();
+                },
+                () => hasConsulted = false
+
+            );
+
+            return Not(iterator);
+        }
 
         /// <summary>
         /// Negates logical action created by rule-checking
@@ -84,6 +104,25 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogicalAction Not(BoundRule rule, KnowledgeBase knowledgeBase)
-            => Not(knowledgeBase.CheckForRules(rule));
+        {
+            bool hasConsulted = false;
+            BacktrackIterator ruleIterator = null;
+
+            BacktrackIterator iterator = new BacktrackIterator(
+                () =>
+                {
+                    if (!hasConsulted)
+                    {
+                        ruleIterator = knowledgeBase.CheckForRules(rule);
+                        hasConsulted = true;
+                    }
+
+                    return ruleIterator.GetNext();
+                },
+                () => hasConsulted = false
+            );
+
+            return Not(iterator);
+        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace LOGQ
@@ -14,6 +15,12 @@ namespace LOGQ
         /// </summary>
         /// <returns>Type mapped to the fact</returns>
         abstract public Type FactType();
+
+        /// <summary>
+        /// Returns IndexedFactsCollection generated specifically for this type
+        /// </summary>
+        /// <returns>IndexedFactsCollection for this type</returns>
+        abstract public IIndexedFactsCollection IndexedFactsCollection();
     }
 
     /// <summary>
@@ -39,6 +46,12 @@ namespace LOGQ
         /// </summary>
         /// <returns>Type mapped to the rule</returns>
         abstract public Type RuleType();
+
+        /// <summary>
+        /// Returns IndexedRulesCollection generated specifically for this type
+        /// </summary>
+        /// <returns>IndexedRulesCollection for this type</returns>
+        abstract public IIndexedRulesCollection IndexedRulesCollection();
     }
 
     /// <summary>
@@ -77,8 +90,8 @@ namespace LOGQ
     public sealed class KnowledgeBase
     {
         // List potentially can be replaced with some kind of relational table of values
-        private Dictionary<Type, List<Fact>> _facts = new Dictionary<Type, List<Fact>>();
-        private Dictionary<Type, List<RuleWithBody>> _rules = new Dictionary<Type, List<RuleWithBody>>();
+        private Dictionary<Type, IIndexedFactsCollection> _facts = new Dictionary<Type, IIndexedFactsCollection>();
+        private Dictionary<Type, IIndexedRulesCollection> _rules = new Dictionary<Type, IIndexedRulesCollection>();
 
         /// <summary>
         /// Returns predicates for fact-checking in this knowledge base
@@ -97,7 +110,7 @@ namespace LOGQ
 
             if (_facts.ContainsKey(factType))
             {
-                foreach (Fact fact in _facts[factType])
+                foreach (Fact fact in _facts[factType].FilteredBySample(sampleFact))
                 {
                     factCheckPredicates.Add(copyStorage =>
                     {
@@ -129,7 +142,7 @@ namespace LOGQ
 
             if (_rules.ContainsKey(ruleType))
             {
-                List<RuleWithBody> rulesFiltered = _rules[ruleType].Where(rule => rule.Head.Equals(ruleHead)).ToList();
+                List<RuleWithBody> rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
                 LogicalQuery innerQuery = null;
                 bool enumeratorIsUpToDate = false;
                 var enumerator = rulesFiltered.GetEnumerator();
@@ -141,9 +154,14 @@ namespace LOGQ
                         {
                             if (!enumeratorIsUpToDate)
                             {
-                                rulesFiltered = _rules[ruleType].Where(rule => rule.Head.Equals(ruleHead)).ToList();
+                                rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
                                 enumerator = rulesFiltered.GetEnumerator();
                                 enumeratorIsUpToDate = true;
+                            }
+
+                            if (innerQuery is not null)
+                            {
+                                innerQuery.Reset();
                             }
 
                             if (!enumerator.MoveNext())
@@ -187,7 +205,7 @@ namespace LOGQ
             
             if (!_facts.ContainsKey(factType))
             {
-                _facts.Add(factType, new List<Fact>());
+                _facts.Add(factType, fact.IndexedFactsCollection());
             }
 
             _facts[factType].Add(fact);
@@ -203,7 +221,7 @@ namespace LOGQ
 
             if (!_rules.ContainsKey(ruleType))
             {
-                _rules.Add(ruleType, new List<RuleWithBody>());
+                _rules.Add(ruleType, rule.Head.IndexedRulesCollection());
             }
 
             _rules[ruleType].Add(rule);

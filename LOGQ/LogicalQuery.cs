@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -25,28 +26,7 @@ namespace LOGQ
 
         internal LogicalAction(ICollection<Predicate<List<IBound>>> actionInitializer)
         {
-            bool enumeratorIsUpToDate = false;
-            var enumerator = actionInitializer.GetEnumerator();
-
-            _iterator = new BacktrackIterator(
-                () =>
-                {
-                    if (!enumeratorIsUpToDate)
-                    {
-                        enumerator = actionInitializer.GetEnumerator();
-                        enumeratorIsUpToDate = true;
-                    }
-
-                    if (!enumerator.MoveNext())
-                    {
-                        return null;
-                    }
-
-                    Predicate<List<IBound>> predicate = enumerator.Current;
-                    return predicate;
-                },
-                () => enumeratorIsUpToDate = false
-            ); 
+            _iterator = new BacktrackIterator(actionInitializer); 
         }
 
         public List<IBound> _boundsCopy = new List<IBound>();
@@ -213,6 +193,10 @@ namespace LOGQ
                 currentNode = newNode;
             }
 
+            /// <summary>
+            /// Builds query tree
+            /// </summary>
+            /// <returns>Complete query tree</returns>
             public QueryTree Build()
             {
                 return new QueryTree(rootGlobal);
@@ -224,13 +208,17 @@ namespace LOGQ
         /// </summary>
         class QueryTree
         {
+            private Node stateNode = null;
+            private Node rootGlobal = null;
+
+            /// <summary>
+            /// Initializes query tree with it root
+            /// </summary>
+            /// <param name="rootGlobal">Global root of a tree</param>
             public QueryTree(Node rootGlobal) 
             { 
                 this.rootGlobal = rootGlobal;
             }
-
-            private Node stateNode = null;
-            private Node rootGlobal = null;
 
             /// <summary>
             /// Restructures query tree when cut node is triggered
@@ -478,7 +466,28 @@ namespace LOGQ
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private LogicalQuery AddNode(BoundRule rule, KnowledgeBase knowledgeBase, bool pathDirection)
         {
-            return AddNode(knowledgeBase.CheckForRules(rule), pathDirection);
+            bool hasConsulted = false;
+            BacktrackIterator ruleIterator = null;  
+
+            BacktrackIterator iterator = new BacktrackIterator(
+                () =>
+                {
+                    if (!hasConsulted)
+                    {
+                        ruleIterator = knowledgeBase.CheckForRules(rule);
+                        hasConsulted = true;
+                    }
+
+                    return ruleIterator.GetNext();
+                },
+                () =>
+                {
+                    hasConsulted = false;
+                    // ruleIterator.Reset();
+                }
+            );
+
+            return AddNode(iterator, pathDirection);
         }
 
         /// <summary>
@@ -491,7 +500,28 @@ namespace LOGQ
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private LogicalQuery AddNode(BoundFact fact, KnowledgeBase knowledgeBase, bool pathDirection)
         {
-            return AddNode(knowledgeBase.CheckForFacts(fact), pathDirection);
+            bool hasConsulted = false;
+            BacktrackIterator factsIterator = null;
+
+            BacktrackIterator iterator = new BacktrackIterator(
+                () =>
+                {
+                    if (!hasConsulted)
+                    {
+                        factsIterator = new BacktrackIterator(knowledgeBase.CheckForFacts(fact));
+                        hasConsulted = true;
+                    }
+
+                    return factsIterator.GetNext();
+                },
+                () =>
+                {
+                    hasConsulted = false;
+                    // factsIterator.Reset();
+                }
+            );
+
+            return AddNode(iterator, pathDirection);
         }
 
         /// <summary>
@@ -706,6 +736,7 @@ namespace LOGQ
         {
             CheckIfCanBuild();
 
+            innerQuery.End();
             bool metTerminalCondition = false;
 
             return With(new BacktrackIterator(
@@ -735,6 +766,7 @@ namespace LOGQ
         {
             CheckIfCanBuild();
 
+            innerQuery.End();
             bool metTerminalCondition = false;
 
             return OrWith(new BacktrackIterator(

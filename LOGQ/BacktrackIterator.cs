@@ -27,6 +27,31 @@ namespace LOGQ
             this._reset = reset;
         }
 
+        internal BacktrackIterator(ICollection<Predicate<List<IBound>>> initializer)
+        {
+            bool enumeratorIsUpToDate = false;
+            var enumerator = initializer.GetEnumerator();
+
+            _generator = () =>
+            {
+                if (!enumeratorIsUpToDate)
+                {
+                    enumerator = initializer.GetEnumerator();
+                    enumeratorIsUpToDate = true;
+                }
+
+                if (!enumerator.MoveNext())
+                {
+                    return null;
+                }
+
+                Predicate<List<IBound>> predicate = enumerator.Current;
+                return predicate;
+            };
+
+            _reset = () => enumeratorIsUpToDate = false;
+        }
+
         /// <summary>
         /// Returns backtrack iterator for not function
         /// </summary>

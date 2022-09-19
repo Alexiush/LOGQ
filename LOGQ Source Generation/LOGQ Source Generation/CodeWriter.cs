@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text;
 
 namespace LOGQ_Source_Generation
@@ -157,6 +159,44 @@ namespace LOGQ_Source_Generation
             return sb.ToString();
         }
 
+        private static string GetHashCodeOverload(List<Property> properties)
+        {
+            var sb = new StringBuilder();
+
+            // ToString has no specification, so GetHashCode is better
+            sb.Append(@"
+        public override int GetHashCode()
+        {
+            ")
+                .Append(@"List<int> propertyCodes = new List<int>
+            {
+                ");
+                // Get each property hashcode and create a hashcode out of it
+            foreach (var property in properties)
+            {
+                sb.AppendLine($"{property.PropertyName}.GetHashCode(),");
+            }
+
+            sb.Append(@"
+            };")
+                .Append(@"
+            int hash = 19;            
+
+            unchecked
+            {
+                foreach (var code in propertyCodes)
+                {
+                    hash = hash * 31 + code;
+                }
+            }
+            
+            return hash;
+        }
+");
+           
+            return sb.ToString();
+        }
+
         private static string TypeGetterOverload(string getterName, string type)
         {
             StringBuilder sb = new StringBuilder();
@@ -165,6 +205,20 @@ namespace LOGQ_Source_Generation
         public override Type " + getterName + @"()
         {
             return ").Append($"typeof({type});").Append(@"
+        }
+");
+
+            return sb.ToString();
+        }
+
+        private static string IndexedCollectionGetter(string getterName, string collectionInterface, string collectionType)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append(@"
+        public override " + collectionInterface + " " + getterName + @"()
+        {
+            return ").Append($"new {collectionType}();").Append(@"
         }
 ");
 
@@ -189,8 +243,14 @@ namespace LOGQ_Source_Generation
             // == and != overload
             sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
 
+            // GetHashCode overload
+            sb.Append(GetHashCodeOverload(dataToGenerate.Properties));
+
             // Get Type
             sb.Append(TypeGetterOverload("FactType", dataToGenerate.OriginName));
+
+            // Get IndexedCollection
+            sb.Append(IndexedCollectionGetter("IndexedFactsCollection", "LOGQ.IIndexedFactsCollection", $"Indexed{className}Collection"));
 
             // End
             sb.Append(@"
@@ -226,6 +286,10 @@ namespace LOGQ_Source_Generation
 
             // Get Type
             sb.Append(TypeGetterOverload("FactType", dataToGenerate.OriginName));
+
+            // Get IndexedCollection
+            sb.Append(IndexedCollectionGetter("IndexedFactsCollection", "LOGQ.IIndexedFactsCollection",
+                $"Indexed{"Fact" + dataToGenerate.Name.Replace('.', '_')}Collection"));
 
             // Bind
             sb.Append(@"
@@ -286,6 +350,9 @@ namespace LOGQ_Source_Generation
             // Get Type
             sb.Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName));
 
+            // Get IndexedCollection
+            sb.Append(IndexedCollectionGetter("IndexedRulesCollection", "LOGQ.IIndexedRulesCollection", $"Indexed{className}Collection"));
+
             // End
 
             sb.Append(@"
@@ -321,6 +388,10 @@ namespace LOGQ_Source_Generation
 
             // Get Type
             sb.Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName));
+
+            // Get IndexedCollection
+            sb.Append(IndexedCollectionGetter("IndexedRulesCollection", "LOGQ.IIndexedRulesCollection",
+                $"Indexed{"Rule" + dataToGenerate.Name.Replace('.', '_')}Collection"));
 
             // End
 
@@ -397,6 +468,187 @@ namespace LOGQ_Source_Generation
             return sb.ToString();
         }
 
+        private static string GenerateIndexedFactsCollection(GenerationData data)
+        {
+            string className = "Fact" + data.Name.Replace('.', '_');
+            string collectionName = $"Indexed{className}Collection";
+
+            var sb = new StringBuilder();
+
+            // Header IndexedFact(Name)Collection
+            sb.Append(WriteHeader(collectionName, "LOGQ.IIndexedFactsCollection"));
+
+            // List of (Name)
+            sb.Append(@"
+        ")
+            .Append($"List<LOGQ.Fact> facts = new List<LOGQ.Fact>();")
+            // HashSet of (Name)
+            .Append(@"
+        ")
+            .Append($"HashSet<{className}> factSet = new HashSet<{className}>();")
+            .Append(@"
+        
+        ");
+
+            // Dictionary<int, Cluster<Fact>> for each property
+            foreach (Property property in data.Properties)
+            {
+                sb.Append($"Dictionary<int, Cluster<Fact>> {property.PropertyName} = new Dictionary<int, Cluster<Fact>>();").Append(@"
+        ");
+            }
+
+            // Add overload
+            sb.Append(@"
+        public void Add(LOGQ.Fact fact)
+        {
+            ")
+                .Append($"{className} factCasted = ({className})fact;")
+                .Append(@"
+
+            facts.Add(factCasted);")
+                .Append(@"
+            factSet.Add(factCasted);
+            
+            ");
+            
+            // Maybe add those as functions and later call them from here
+            foreach(Property property in data.Properties)
+            {
+                sb.Append($"int {property.PropertyName}Hash = factCasted.{property.PropertyName}.Value.GetHashCode();")
+                    .Append(@"
+            ").Append($"if (!{property.PropertyName}.ContainsKey({property.PropertyName}Hash))").Append(@"
+            {
+                ")
+                    .Append($"{property.PropertyName}.Add({property.PropertyName}Hash, new Cluster<Fact>());").Append(@"
+            }").Append(@" 
+            ")
+                    .Append($"{property.PropertyName}[{property.PropertyName}Hash].Add(fact);").Append(@"
+            
+            ");
+            }
+
+            sb.Append(@"
+        }
+");
+
+            // Get overload 
+            sb.Append(@"
+        public List<LOGQ.Fact> FilteredBySample(LOGQ.BoundFact sample)
+        {
+            ")
+                .Append($"Bound{className} sampleCasted = (Bound{className})sample;")
+                // Aggregate list of tuples (cluster, size)
+                .Append(@"
+            List<(Cluster<Fact> cluster, int size)> clusters = new List<(Cluster<Fact> cluster, int size)>();
+            ");
+                
+            foreach (Property property in data.Properties)
+            {
+                sb.Append(@"
+            ").Append($"if (sampleCasted.{property.PropertyName}.IsBound())").Append(@"
+            {
+                ").Append($"int code = sampleCasted.{property.PropertyName}.Value.GetHashCode();").Append(@"
+                    
+                ")
+                // Maybe add else for empty clusters to return them - 0 facts
+                .Append($"if ({property.PropertyName}.ContainsKey(code))").Append(@"
+                {
+                    ").Append($"Cluster<Fact> cluster = {property.PropertyName}[code];").Append(@"
+                    ").Append($"clusters.Add((cluster, cluster.Size));").Append(@"
+                }
+                else
+                {
+                    clusters.Add((new Cluster<Fact>(), 0));
+                }
+            }
+            
+            ");
+            }
+
+            sb.Append($"" +
+                $"if (clusters.Count == {data.Properties.Count})").Append(@"
+            {
+                ")
+            .Append($"{className} factCopy = new {className}(").Append(@"
+                    ")
+            .Append(string.Join("\n, ", data.Properties.Select(property => $"sampleCasted.{property.PropertyName}.Value"))).Append(@"
+                );
+                
+                if (factSet.Contains(factCopy))
+                {
+                    return new List<LOGQ.Fact> { (LOGQ.Fact)(factCopy) };
+                }
+            ")
+            // Add each property value
+            .Append(@"
+            }")
+            .Append(@"
+
+            if (clusters.Count == 0)
+            {
+                return facts;
+            }
+            
+            ")
+                
+                .Append(@"return clusters
+                .OrderBy(cluster => cluster.size)
+                .First()
+                .cluster
+                .GetValues();")
+                
+            .Append(@"
+        }
+        ");
+
+            // End
+            sb.Append(@"
+    }
+");
+
+            return sb.ToString();
+        }
+
+        private static string GenerateIndexedRulesCollection(GenerationData data)
+        {
+            string className = "Rule" + data.Name.Replace('.', '_');
+            string collectionName = $"Indexed{className}Collection";
+
+            var sb = new StringBuilder();
+
+            // Header IndexedFact(Name)Collection
+            sb.Append(WriteHeader(collectionName, "LOGQ.IIndexedRulesCollection"));
+
+            // List of (Name)
+            sb.AppendLine(@"
+        List<LOGQ.RuleWithBody> rules = new List<LOGQ.RuleWithBody>();       
+    ");
+
+            // Add overload
+            sb.Append(@"
+        public void Add(LOGQ.RuleWithBody rule)
+        {
+            ")
+                .Append("rules.Add(rule);").Append(@"
+        }
+        
+        ");
+
+            // Get overload 
+            sb.Append(@"public List<LOGQ.RuleWithBody> FilteredByPattern(LOGQ.BoundRule pattern)
+        {
+            ")
+                .Append("return rules.Where(rule => rule.Head.Equals(pattern)).ToList();").Append(@"
+        }");
+
+            // End
+            sb.Append(@"
+    }
+");
+
+            return sb.ToString();
+        }
+
         public static string GenerateExtensionClass(List<GenerationData> classesToGenerate)
         {
             var sb = new StringBuilder();
@@ -404,6 +656,7 @@ namespace LOGQ_Source_Generation
             sb.Append(@"using LOGQ;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace LOGQ.Generation
 {");
@@ -416,7 +669,9 @@ namespace LOGQ.Generation
                 sb.Append(GenerateFact(data))
                 .Append(GenerateBoundFact(data))
                 .Append(GenerateRule(data))
-                .Append(GenerateBoundRule(data));
+                .Append(GenerateBoundRule(data))
+                .Append(GenerateIndexedFactsCollection(data))
+                .Append(GenerateIndexedRulesCollection(data));
             }
 
             // Add extension class that generates conversions to Fact classes
