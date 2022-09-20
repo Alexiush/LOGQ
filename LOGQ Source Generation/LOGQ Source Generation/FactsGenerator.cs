@@ -18,11 +18,13 @@ namespace LOGQ_Source_Generation
     {
         public string PropertyName;
         public string PropertyType;
+        public bool CanBeHashed;
 
-        public Property(string propertyName, string propertyType)
+        public Property(string propertyName, string propertyType, bool canBeHashed)
         {
             PropertyName = propertyName;
             PropertyType = propertyType;
+            CanBeHashed = canBeHashed;
         }
     }
 
@@ -34,12 +36,14 @@ namespace LOGQ_Source_Generation
         public readonly string OriginName;
         public readonly string Name;
         public readonly List<Property> Properties;
+        public bool CanBeIndexed;
 
-        public GenerationData(string originName, string name, List<Property> properties)
+        public GenerationData(string originName, string name, List<Property> properties, bool canBeIndexed)
         {
             OriginName = originName;
             Name = name;
             Properties = properties;
+            CanBeIndexed = canBeIndexed;
         }
     }
 
@@ -64,6 +68,9 @@ namespace LOGQ_Source_Generation
 
         private static ITypeSymbol FieldTypeReciever(ISymbol member)
             => ((IFieldSymbol)member).Type;
+
+        private static bool HashablePropertyFilter(ISymbol member)
+            => !member.GetAttributes().Any(a => a.AttributeClass.ToDisplayString() == "LOGQ.NotHashComparableAttribute");
 
         private static ITypeSymbol UniversalTypeReciever(ISymbol member)
         {
@@ -90,6 +97,7 @@ namespace LOGQ_Source_Generation
             var classesToGenerate = new List<GenerationData>();
             // Get the semantic representation of marker attribute 
             INamedTypeSymbol? classAttribute = compilation.GetTypeByMetadataName("LOGQ.FactAttribute");
+            INamedTypeSymbol? noIndexingAttribute = compilation.GetTypeByMetadataName("LOGQ.NoIndexingAttribute");
 
             if (classAttribute == null)
             {
@@ -114,10 +122,18 @@ namespace LOGQ_Source_Generation
                 // Get the full type name of the class 
                 string className = classSymbol.ToDisplayString();
                 int mappingMode = 0;
+                bool canBeIndexed = true;
 
                 // Loop through all of the attributes on the class until we find the [LOGQ.Fact] attribute
                 foreach (AttributeData attributeData in classSymbol.GetAttributes())
                 {
+                    // if it's NoHashing Attribute - change flag
+
+                    if (noIndexingAttribute.Equals(attributeData.AttributeClass, SymbolEqualityComparer.Default))
+                    {
+                        canBeIndexed = false;
+                    }
+
                     if (!classAttribute.Equals(attributeData.AttributeClass, SymbolEqualityComparer.Default))
                     {
                         // This isn't the [LOGQ.Fact] attribute
@@ -229,12 +245,12 @@ namespace LOGQ_Source_Generation
                 {
                     if (filter(member))
                     {
-                        properties.Add(new Property(member.Name, typeReciever(member).ToDisplayString()));
+                        properties.Add(new Property(member.Name, typeReciever(member).ToDisplayString(), HashablePropertyFilter(member)));
                     }
                 }
 
                 // Create a GenerationData for use in the generation phase
-                classesToGenerate.Add(new GenerationData(classSymbol.ToDisplayString(), className, properties));
+                classesToGenerate.Add(new GenerationData(classSymbol.ToDisplayString(), className, properties, canBeIndexed));
             }
 
             return classesToGenerate;
