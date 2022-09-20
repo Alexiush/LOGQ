@@ -35,9 +35,9 @@ namespace LOGQ
     }
 
     [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
-    public class NotHashComparable: System.Attribute
+    public class NotHashComparableAttribute: System.Attribute
     {
-        public NotHashComparable() { }
+        public NotHashComparableAttribute() { }
     }
 
     /// <summary>
