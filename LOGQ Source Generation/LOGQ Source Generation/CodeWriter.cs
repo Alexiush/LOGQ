@@ -211,14 +211,14 @@ namespace LOGQ_Source_Generation
             return sb.ToString();
         }
 
-        private static string IndexedCollectionGetter(string getterName, string collectionInterface, string collectionType)
+        private static string IndexedStorageGetter(string getterName, string storageInterface, string storageType)
         {
             var sb = new StringBuilder();
 
             sb.Append(@"
-        public override " + collectionInterface + " " + getterName + @"()
+        public override " + storageInterface + " " + getterName + @"()
         {
-            return ").Append($"new {collectionType}();").Append(@"
+            return ").Append($"new {storageType}();").Append(@"
         }
 ");
 
@@ -249,8 +249,8 @@ namespace LOGQ_Source_Generation
             // Get Type
             sb.Append(TypeGetterOverload("FactType", dataToGenerate.OriginName));
 
-            // Get IndexedCollection
-            sb.Append(IndexedCollectionGetter("IndexedFactsCollection", "LOGQ.IIndexedFactsCollection", $"Indexed{className}Collection"));
+            // Get IndexedStorage
+            sb.Append(IndexedStorageGetter("IndexedFactsStorage", "LOGQ.IIndexedFactsStorage", $"Indexed{className}Storage"));
 
             // End
             sb.Append(@"
@@ -287,9 +287,9 @@ namespace LOGQ_Source_Generation
             // Get Type
             sb.Append(TypeGetterOverload("FactType", dataToGenerate.OriginName));
 
-            // Get IndexedCollection
-            sb.Append(IndexedCollectionGetter("IndexedFactsCollection", "LOGQ.IIndexedFactsCollection",
-                $"Indexed{"Fact" + dataToGenerate.Name.Replace('.', '_')}Collection"));
+            // Get IndexedStorage
+            sb.Append(IndexedStorageGetter("IndexedFactsStorage", "LOGQ.IIndexedFactsStorage",
+                $"Indexed{"Fact" + dataToGenerate.Name.Replace('.', '_')}Storage"));
 
             // Bind
             sb.Append(@"
@@ -350,8 +350,8 @@ namespace LOGQ_Source_Generation
             // Get Type
             sb.Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName));
 
-            // Get IndexedCollection
-            sb.Append(IndexedCollectionGetter("IndexedRulesCollection", "LOGQ.IIndexedRulesCollection", $"Indexed{className}Collection"));
+            // Get IndexedStorage
+            sb.Append(IndexedStorageGetter("IndexedRulesStorage", "LOGQ.IIndexedRulesStorage", $"Indexed{className}Storage"));
 
             // End
 
@@ -389,9 +389,9 @@ namespace LOGQ_Source_Generation
             // Get Type
             sb.Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName));
 
-            // Get IndexedCollection
-            sb.Append(IndexedCollectionGetter("IndexedRulesCollection", "LOGQ.IIndexedRulesCollection",
-                $"Indexed{"Rule" + dataToGenerate.Name.Replace('.', '_')}Collection"));
+            // Get IndexedStorage
+            sb.Append(IndexedStorageGetter("IndexedRulesStorage", "LOGQ.IIndexedRulesStorage",
+                $"Indexed{"Rule" + dataToGenerate.Name.Replace('.', '_')}Storage"));
 
             // End
 
@@ -468,15 +468,15 @@ namespace LOGQ_Source_Generation
             return sb.ToString();
         }
 
-        private static string GenerateIndexedFactsCollection(GenerationData data)
+        private static string GenerateIndexedFactsStorage(GenerationData data)
         {
             string className = "Fact" + data.Name.Replace('.', '_');
-            string collectionName = $"Indexed{className}Collection";
+            string storageName = $"Indexed{className}Storage";
 
             var sb = new StringBuilder();
 
-            // Header IndexedFact(Name)Collection
-            sb.Append(WriteHeader(collectionName, "LOGQ.IIndexedFactsCollection"));
+            // Header IndexedFact(Name)Storage
+            sb.Append(WriteHeader(storageName, "LOGQ.IIndexedFactsStorage"));
 
             // List of (Name)
             sb.Append(@"
@@ -609,15 +609,15 @@ namespace LOGQ_Source_Generation
             return sb.ToString();
         }
 
-        private static string GenerateIndexedRulesCollection(GenerationData data)
+        private static string GenerateIndexedRulesStorage(GenerationData data)
         {
             string className = "Rule" + data.Name.Replace('.', '_');
-            string collectionName = $"Indexed{className}Collection";
+            string storageName = $"Indexed{className}Storage";
 
             var sb = new StringBuilder();
 
-            // Header IndexedFact(Name)Collection
-            sb.Append(WriteHeader(collectionName, "LOGQ.IIndexedRulesCollection"));
+            // Header IndexedFact(Name)Storage
+            sb.Append(WriteHeader(storageName, "LOGQ.IIndexedRulesStorage"));
 
             // List of (Name)
             sb.AppendLine(@"
@@ -670,8 +670,8 @@ namespace LOGQ.Generation
                 .Append(GenerateBoundFact(data))
                 .Append(GenerateRule(data))
                 .Append(GenerateBoundRule(data))
-                .Append(GenerateIndexedFactsCollection(data))
-                .Append(GenerateIndexedRulesCollection(data));
+                .Append(GenerateIndexedFactsStorage(data))
+                .Append(GenerateIndexedRulesStorage(data));
             }
 
             // Add extension class that generates conversions to Fact classes
