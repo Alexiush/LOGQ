@@ -38,6 +38,11 @@ namespace LOGQ
         {
             FactName = factName;
             MappingMode = mappingMode;
+
+            if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(factName))
+            {
+                throw new System.ArgumentException("Not a valid class name");
+            }
         }
 
         public string FactName { get; }

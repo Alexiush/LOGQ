@@ -20,7 +20,7 @@ namespace LOGQ
         /// Returns IndexedFactsCollection generated specifically for this type
         /// </summary>
         /// <returns>IndexedFactsCollection for this type</returns>
-        abstract public IIndexedFactsCollection IndexedFactsCollection();
+        abstract public IIndexedFactsStorage IndexedFactsStorage();
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ namespace LOGQ
         /// Returns IndexedRulesCollection generated specifically for this type
         /// </summary>
         /// <returns>IndexedRulesCollection for this type</returns>
-        abstract public IIndexedRulesCollection IndexedRulesCollection();
+        abstract public IIndexedRulesStorage IndexedRulesStorage();
     }
 
     /// <summary>
@@ -90,8 +90,8 @@ namespace LOGQ
     public sealed class KnowledgeBase
     {
         // List potentially can be replaced with some kind of relational table of values
-        private Dictionary<Type, IIndexedFactsCollection> _facts = new Dictionary<Type, IIndexedFactsCollection>();
-        private Dictionary<Type, IIndexedRulesCollection> _rules = new Dictionary<Type, IIndexedRulesCollection>();
+        private Dictionary<Type, IIndexedFactsStorage> _facts = new Dictionary<Type, IIndexedFactsStorage>();
+        private Dictionary<Type, IIndexedRulesStorage> _rules = new Dictionary<Type, IIndexedRulesStorage>();
 
         /// <summary>
         /// Returns predicates for fact-checking in this knowledge base
@@ -205,7 +205,7 @@ namespace LOGQ
             
             if (!_facts.ContainsKey(factType))
             {
-                _facts.Add(factType, fact.IndexedFactsCollection());
+                _facts.Add(factType, fact.IndexedFactsStorage());
             }
 
             _facts[factType].Add(fact);
@@ -221,7 +221,7 @@ namespace LOGQ
 
             if (!_rules.ContainsKey(ruleType))
             {
-                _rules.Add(ruleType, rule.Head.IndexedRulesCollection());
+                _rules.Add(ruleType, rule.Head.IndexedRulesStorage());
             }
 
             _rules[ruleType].Add(rule);

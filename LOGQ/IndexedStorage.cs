@@ -26,9 +26,24 @@ namespace LOGQ
     }
 
     /// <summary>
-    /// Collection that provides fast access to facts that possibly fit the sample
+    /// Attribute that marks inability to use clustering on this fact type
     /// </summary>
-    public interface IIndexedFactsCollection
+    [System.AttributeUsage(System.AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public class NoIndexingAttribute: System.Attribute
+    {
+        public NoIndexingAttribute() { }
+    }
+
+    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+    public class NotHashComparable: System.Attribute
+    {
+        public NotHashComparable() { }
+    }
+
+    /// <summary>
+    /// Storage that provides fast access to facts that possibly fit the sample
+    /// </summary>
+    public interface IIndexedFactsStorage
     {
         public void Add(Fact fact);
 
@@ -36,9 +51,9 @@ namespace LOGQ
     }
 
     /// <summary>
-    /// Collection that provides fast access to rules that possibly fit the sample
+    /// Storage that provides fast access to rules that possibly fit the sample
     /// </summary>
-    public interface IIndexedRulesCollection
+    public interface IIndexedRulesStorage
     {
         public void Add(RuleWithBody rule);
 
