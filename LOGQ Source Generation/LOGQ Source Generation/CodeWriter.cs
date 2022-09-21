@@ -728,7 +728,7 @@ namespace LOGQ_Source_Generation
             return sb.ToString();
         }
 
-        private static string GetResource(string classToPlace, string nameSpace, ParentClass? parentClass)
+        private static string GetResource(string classToPlace, string nameSpace)
         {
             var sb = new StringBuilder();
 
@@ -747,33 +747,8 @@ namespace LOGQ_Source_Generation
     {");
             }
 
-            int parentsCount = 0;
-
-            // Loop through the full parent type hiearchy, starting with the outermost
-            while (parentClass is not null)
-            {
-                sb
-                    .Append("    partial ")
-                    .Append(parentClass.Keyword) // e.g. class/struct/record
-                    .Append(' ')
-                    .Append(parentClass.Name) // e.g. Outer/Generic<T>
-                    .Append(' ')
-                    .Append(parentClass.Constraints) // e.g. where T: new()
-                    .AppendLine(@"
-        {");
-                parentsCount++; // keep track of how many layers deep we are
-                parentClass = parentClass.Child; // repeat with the next child
-            }
-
             // Write the actual target generation code here. Not shown for brevity
             sb.AppendLine(classToPlace);
-
-            // We need to "close" each of the parent types, so write
-            // the required number of '}'
-            for (int i = 0; i < parentsCount; i++)
-            {
-                sb.AppendLine(@"    }");
-            }
 
             // Close the namespace, if we had one
             if (hasNamespace)
@@ -822,7 +797,7 @@ using System.Linq;
                 // Add extension class that generates conversions to Fact classes
                 classSB.Append(GenerateFactExtensions(data));
 
-                sb.Append(GetResource(classSB.ToString(), data.Namespace, data.ParentClass));
+                sb.Append(GetResource(classSB.ToString(), data.Namespace));
             }
 
             return sb.ToString();

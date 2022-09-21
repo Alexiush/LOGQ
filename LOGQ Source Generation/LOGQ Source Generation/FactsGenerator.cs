@@ -39,34 +39,16 @@ namespace LOGQ_Source_Generation
         public string Namespace;
         public readonly List<Property> Properties;
         public bool CanBeIndexed;
-        public ParentClass? ParentClass;
 
         public GenerationData(string originName, string name, string nameSpace, 
-            List<Property> properties, bool canBeIndexed, ParentClass? parentClass)
+            List<Property> properties, bool canBeIndexed)
         {
             OriginName = originName;
             Name = name;
             Namespace = nameSpace;
             Properties = properties;
             CanBeIndexed = canBeIndexed;
-            ParentClass = parentClass;
         }
-    }
-
-    internal class ParentClass
-    {
-        public ParentClass(string keyword, string name, string constraints, ParentClass? child)
-        {
-            Keyword = keyword;
-            Name = name;
-            Constraints = constraints;
-            Child = child;
-        }
-
-        public ParentClass? Child { get; }
-        public string Keyword { get; }
-        public string Name { get; }
-        public string Constraints { get; }
     }
 
     /// <summary>
@@ -105,37 +87,6 @@ namespace LOGQ_Source_Generation
                 return FieldTypeReciever(member);
             }
         }
-
-        static ParentClass? GetParentClasses(BaseTypeDeclarationSyntax typeSyntax)
-        {
-            // Try and get the parent syntax. If it isn't a type like class/struct, this will be null
-            TypeDeclarationSyntax? parentSyntax = typeSyntax.Parent as TypeDeclarationSyntax;
-            ParentClass? parentClassInfo = null;
-
-            // Keep looping while we're in a supported nested type
-            while (parentSyntax != null && IsAllowedKind(parentSyntax.Kind()))
-            {
-                // Record the parent type keyword (class/struct etc), name, and constraints
-                parentClassInfo = new ParentClass(
-                    keyword: parentSyntax.Keyword.ValueText,
-                    name: parentSyntax.Identifier.ToString() + parentSyntax.TypeParameterList,
-                    constraints: parentSyntax.ConstraintClauses.ToString(),
-                    child: parentClassInfo); // set the child link (null initially)
-
-                // Move to the next outer type
-                parentSyntax = (parentSyntax.Parent as TypeDeclarationSyntax);
-            }
-
-            // return a link to the outermost parent type
-            return parentClassInfo;
-
-        }
-
-        // We can only be nested in class/struct/record
-        static bool IsAllowedKind(SyntaxKind kind) =>
-            kind == SyntaxKind.ClassDeclaration ||
-            kind == SyntaxKind.StructDeclaration ||
-            kind == SyntaxKind.RecordDeclaration;
 
         // determine the namespace the class/enum/struct is declared in, if any
         static string GetNamespace(BaseTypeDeclarationSyntax syntax)
@@ -348,10 +299,9 @@ namespace LOGQ_Source_Generation
                 }
 
                 string classNamespace = GetNamespace(classDeclarationSyntax);
-                ParentClass? parentClass = GetParentClasses(classDeclarationSyntax);
                 // Create a GenerationData for use in the generation phase
                 classesToGenerate.Add(new GenerationData(classSymbol.ToDisplayString(), 
-                    className, classNamespace, properties, canBeIndexed, parentClass));
+                    className, classNamespace, properties, canBeIndexed));
             }
 
             return classesToGenerate;
