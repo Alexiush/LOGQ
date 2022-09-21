@@ -728,26 +728,63 @@ namespace LOGQ_Source_Generation
             return sb.ToString();
         }
 
-        private static string PlaceInNamespace(string classToPlace, string nameSpace)
+        private static string GetResource(string classToPlace, string nameSpace, ParentClass? parentClass)
         {
-            if (nameSpace == "")
-            {
-                return classToPlace;
-            }
-                
             var sb = new StringBuilder();
 
-            sb.Append($"namespace {nameSpace}").Append(@"
-{")
-            .Append(classToPlace)
-            .Append(@"
-}
-");
+            // If we don't have a namespace, generate the code in the "default"
+            // namespace, either global:: or a different <RootNamespace>
+            var hasNamespace = !string.IsNullOrEmpty(nameSpace);
+            if (hasNamespace)
+            {
+                // We could use a file-scoped namespace here which would be a little impler, 
+                // but that requires C# 10, which might not be available. 
+                // Depends what you want to support!
+                sb
+                    .Append("namespace ")
+                    .Append(nameSpace)
+                    .AppendLine(@"
+    {");
+            }
+
+            int parentsCount = 0;
+
+            // Loop through the full parent type hiearchy, starting with the outermost
+            while (parentClass is not null)
+            {
+                sb
+                    .Append("    partial ")
+                    .Append(parentClass.Keyword) // e.g. class/struct/record
+                    .Append(' ')
+                    .Append(parentClass.Name) // e.g. Outer/Generic<T>
+                    .Append(' ')
+                    .Append(parentClass.Constraints) // e.g. where T: new()
+                    .AppendLine(@"
+        {");
+                parentsCount++; // keep track of how many layers deep we are
+                parentClass = parentClass.Child; // repeat with the next child
+            }
+
+            // Write the actual target generation code here. Not shown for brevity
+            sb.AppendLine(classToPlace);
+
+            // We need to "close" each of the parent types, so write
+            // the required number of '}'
+            for (int i = 0; i < parentsCount; i++)
+            {
+                sb.AppendLine(@"    }");
+            }
+
+            // Close the namespace, if we had one
+            if (hasNamespace)
+            {
+                sb.Append('}').AppendLine();
+            }
 
             return sb.ToString();
         }
 
-        public static string GenerateExtensionClass(List<GenerationData> classesToGenerate)
+        internal static string GenerateExtensionClass(List<GenerationData> classesToGenerate)
         {
             var sb = new StringBuilder();
 
@@ -785,7 +822,7 @@ using System.Linq;
                 // Add extension class that generates conversions to Fact classes
                 classSB.Append(GenerateFactExtensions(data));
 
-                sb.Append(PlaceInNamespace(classSB.ToString(), data.Namespace));
+                sb.Append(GetResource(classSB.ToString(), data.Namespace, data.ParentClass));
             }
 
             return sb.ToString();
