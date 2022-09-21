@@ -229,7 +229,7 @@ namespace LOGQ_Source_Generation
         {
             var sb = new StringBuilder();
 
-            string className = "Fact" + dataToGenerate.Name.Replace('.', '_');
+            string className = "Fact" + dataToGenerate.Name;
 
             // Header
             sb.Append(WriteHeader(className, "LOGQ.Fact"));
@@ -264,7 +264,7 @@ namespace LOGQ_Source_Generation
         {
             var sb = new StringBuilder();
 
-            string className = "BoundFact" + dataToGenerate.Name.Replace('.', '_');
+            string className = "BoundFact" + dataToGenerate.Name;
 
             // Header
             sb.Append(WriteHeader(className, "LOGQ.BoundFact"));
@@ -279,17 +279,17 @@ namespace LOGQ_Source_Generation
             sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
 
             // == and != with common Fact
-            sb.Append(EqualityOperatorsOverload(className, "Fact" + dataToGenerate.Name.Replace('.', '_'), dataToGenerate.Properties));
+            sb.Append(EqualityOperatorsOverload(className, "Fact" + dataToGenerate.Name, dataToGenerate.Properties));
 
             // Equals
-            sb.Append(EqualsOverload(className, $"Fact{dataToGenerate.Name.Replace('.', '_')}"));
+            sb.Append(EqualsOverload(className, $"Fact{dataToGenerate.Name}"));
 
             // Get Type
             sb.Append(TypeGetterOverload("FactType", dataToGenerate.OriginName));
 
             // Get IndexedStorage
             sb.Append(IndexedStorageGetter("IndexedFactsStorage", "LOGQ.IIndexedFactsStorage",
-                $"Indexed{"Fact" + dataToGenerate.Name.Replace('.', '_')}Storage"));
+                $"Indexed{"Fact" + dataToGenerate.Name}Storage"));
 
             // Bind
             sb.Append(@"
@@ -302,7 +302,7 @@ namespace LOGQ_Source_Generation
                 .Append(@");
             }
             ")
-            .Append($"Fact{dataToGenerate.Name.Replace('.', '_')} typedFact = (Fact{dataToGenerate.Name.Replace('.', '_')})fact;");
+            .Append($"Fact{dataToGenerate.Name} typedFact = (Fact{dataToGenerate.Name})fact;");
 
             foreach (Property property in dataToGenerate.Properties)
             {
@@ -327,7 +327,7 @@ namespace LOGQ_Source_Generation
         {
             var sb = new StringBuilder();
 
-            string className = "Rule" + dataToGenerate.Name.Replace('.', '_');
+            string className = "Rule" + dataToGenerate.Name;
 
             // Header
             sb.Append(WriteHeader(className, "LOGQ.Rule"));
@@ -366,7 +366,7 @@ namespace LOGQ_Source_Generation
         {
             var sb = new StringBuilder();
 
-            string className = "BoundRule" + dataToGenerate.Name.Replace('.', '_');
+            string className = "BoundRule" + dataToGenerate.Name;
 
             // Header
             sb.Append(WriteHeader(className, "LOGQ.BoundRule"));
@@ -381,17 +381,17 @@ namespace LOGQ_Source_Generation
             sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
 
             // == and != for common rule
-            sb.Append(EqualityOperatorsOverload(className, "Rule" + dataToGenerate.Name.Replace('.', '_'), dataToGenerate.Properties));
+            sb.Append(EqualityOperatorsOverload(className, "Rule" + dataToGenerate.Name, dataToGenerate.Properties));
 
             // Equals
-            sb.Append(EqualsOverload(className, $"Rule{dataToGenerate.Name.Replace('.', '_')}"));
+            sb.Append(EqualsOverload(className, $"Rule{dataToGenerate.Name}"));
 
             // Get Type
             sb.Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName));
 
             // Get IndexedStorage
             sb.Append(IndexedStorageGetter("IndexedRulesStorage", "LOGQ.IIndexedRulesStorage",
-                $"Indexed{"Rule" + dataToGenerate.Name.Replace('.', '_')}Storage"));
+                $"Indexed{"Rule" + dataToGenerate.Name}Storage"));
 
             // End
 
@@ -406,7 +406,7 @@ namespace LOGQ_Source_Generation
         {
             var sb = new StringBuilder();
 
-            string className = classPrefix + generatedClass.Name.Replace('.', '_');
+            string className = classPrefix + generatedClass.Name;
 
             sb.Append(@"
         public static ")
@@ -440,25 +440,22 @@ namespace LOGQ_Source_Generation
             return sb.ToString();
         }
 
-        private static string GenerateFactExtensions(List<GenerationData> generatedClasses)
+        private static string GenerateFactExtensions(GenerationData data)
         {
             var sb = new StringBuilder();
 
             // Header
 
             sb.Append(@"
-    public static class ")
+    public static partial class ")
             .Append("FactExtensions")
             .Append(@"
     {");
 
-            foreach (GenerationData generatedClass in generatedClasses)
-            {
-                sb.Append(GenerateExtensionFunction(generatedClass, "Fact", ""))
-                    .Append(GenerateExtensionFunction(generatedClass, "BoundFact", "Bound"))
-                    .Append(GenerateExtensionFunction(generatedClass, "Rule", "Rule"))
-                    .Append(GenerateExtensionFunction(generatedClass, "BoundRule", "Bound"));
-            }
+            sb.Append(GenerateExtensionFunction(data, "Fact", ""))
+                    .Append(GenerateExtensionFunction(data, "BoundFact", "Bound"))
+                    .Append(GenerateExtensionFunction(data, "Rule", "Rule"))
+                    .Append(GenerateExtensionFunction(data, "BoundRule", "Bound"));
 
             // End
 
@@ -470,7 +467,7 @@ namespace LOGQ_Source_Generation
 
         private static string GenerateIndexedFactsStorage(GenerationData data)
         {
-            string className = "Fact" + data.Name.Replace('.', '_');
+            string className = "Fact" + data.Name;
             string storageName = $"Indexed{className}Storage";
 
             List<Property> hashableProoerties = data.Properties.Where(p => p.CanBeHashed).ToList();
@@ -613,7 +610,7 @@ namespace LOGQ_Source_Generation
 
         private static string GenerateSimpleFactsStorage(GenerationData data)
         {
-            string className = "Fact" + data.Name.Replace('.', '_');
+            string className = "Fact" + data.Name;
             string storageName = $"Indexed{className}Storage";
 
             var sb = new StringBuilder();
@@ -653,7 +650,7 @@ namespace LOGQ_Source_Generation
 
         private static string GenerateIndexedRulesStorage(GenerationData data)
         {
-            string className = "Rule" + data.Name.Replace('.', '_');
+            string className = "Rule" + data.Name;
             string storageName = $"Indexed{className}Storage";
 
             var sb = new StringBuilder();
@@ -693,7 +690,7 @@ namespace LOGQ_Source_Generation
 
         private static string GenerateSimpleRulesStorage(GenerationData data)
         {
-            string className = "Rule" + data.Name.Replace('.', '_');
+            string className = "Rule" + data.Name;
             string storageName = $"Indexed{className}Storage";
 
             var sb = new StringBuilder();
@@ -731,46 +728,65 @@ namespace LOGQ_Source_Generation
             return sb.ToString();
         }
 
+        private static string PlaceInNamespace(string classToPlace, string nameSpace)
+        {
+            if (nameSpace == "")
+            {
+                return classToPlace;
+            }
+                
+            var sb = new StringBuilder();
+
+            sb.Append($"namespace {nameSpace}").Append(@"
+{")
+            .Append(classToPlace)
+            .Append(@"
+}
+");
+
+            return sb.ToString();
+        }
+
         public static string GenerateExtensionClass(List<GenerationData> classesToGenerate)
         {
             var sb = new StringBuilder();
 
+            // TODO: Add namespace generation for each class
             sb.Append(@"using LOGQ;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LOGQ.Generation
-{");
+");
 
             foreach (GenerationData data in classesToGenerate)
             {
                 // Add Fact and BoundFact classes
                 // Add Rule and BoundRule classes
 
-                sb.Append(GenerateFact(data))
+                var classSB = new StringBuilder();
+
+                classSB.Append(GenerateFact(data))
                 .Append(GenerateBoundFact(data))
                 .Append(GenerateRule(data))
                 .Append(GenerateBoundRule(data));
 
                 if (data.CanBeIndexed)
                 {
-                    sb.Append(GenerateIndexedFactsStorage(data))
+                    classSB.Append(GenerateIndexedFactsStorage(data))
                     .Append(GenerateIndexedRulesStorage(data));
                 }
                 else
                 {
-                    sb.Append(GenerateSimpleFactsStorage(data))
+                    classSB.Append(GenerateSimpleFactsStorage(data))
                     .Append(GenerateSimpleRulesStorage(data));
                 }
-                
+
+                // Add extension class that generates conversions to Fact classes
+                classSB.Append(GenerateFactExtensions(data));
+
+                sb.Append(PlaceInNamespace(classSB.ToString(), data.Namespace));
             }
-
-            // Add extension class that generates conversions to Fact classes
-            sb.Append(GenerateFactExtensions(classesToGenerate));
-
-            sb.Append(@"
-}");
 
             return sb.ToString();
         }
