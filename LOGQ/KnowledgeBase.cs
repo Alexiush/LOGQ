@@ -89,7 +89,6 @@ namespace LOGQ
     /// </summary>
     public sealed class KnowledgeBase
     {
-        // List potentially can be replaced with some kind of relational table of values
         private Dictionary<Type, IIndexedFactsStorage> _facts = new Dictionary<Type, IIndexedFactsStorage>();
         private Dictionary<Type, IIndexedRulesStorage> _rules = new Dictionary<Type, IIndexedRulesStorage>();
 

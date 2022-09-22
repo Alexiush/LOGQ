@@ -5,6 +5,10 @@ using System.Text;
 
 namespace LOGQ
 {
+    /// <summary>
+    /// Generic implementation of FactsStorage
+    /// </summary>
+    /// <typeparam name="T">Type</typeparam>
     internal class IndexedFactsStorage<T> : IIndexedFactsStorage
     {
         HashSet<Fact> facts;
@@ -26,6 +30,9 @@ namespace LOGQ
         }
     }
 
+    /// <summary>
+    /// General implementation of RulesStorage
+    /// </summary>
     internal class IndexedRulesStorage : IIndexedRulesStorage
     {
         List<RuleWithBody> rules;
@@ -41,6 +48,10 @@ namespace LOGQ
         }
     }
 
+    /// <summary>
+    /// Generic implementation of Fact
+    /// </summary>
+    /// <typeparam name="T">Type</typeparam>
     public class FactAlias<T>: Fact
     {
         public Variable<T> Value;
@@ -105,6 +116,10 @@ namespace LOGQ
         }
     }
 
+    /// <summary>
+    /// Generic implementation of BoundFact
+    /// </summary>
+    /// <typeparam name="T">Type</typeparam>
     public class BoundFactAlias<T>: BoundFact
     {
         public BoundVariable<T> Value;
@@ -169,6 +184,10 @@ namespace LOGQ
         }
     }
 
+    /// <summary>
+    /// Generic implementation of Rule
+    /// </summary>
+    /// <typeparam name="T">Type</typeparam>
     public class RuleAlias<T>: Rule
     {
         public RuleVariable<T> Value;
@@ -228,6 +247,10 @@ namespace LOGQ
         }
     }
 
+    /// <summary>
+    /// Generic implementation of BoundRule
+    /// </summary>
+    /// <typeparam name="T">Type</typeparam>
     public class BoundRuleAlias<T>: BoundRule
     {
         public BoundVariable<T> Value;
@@ -287,6 +310,9 @@ namespace LOGQ
         }
     }
 
+    /// <summary>
+    /// Generic FactExtensions
+    /// </summary>
     public static class GenericFactsExtensions
     {
         public static BoundRuleAlias<T> AsBoundRule<T>(this BoundVariable<T> origin)
