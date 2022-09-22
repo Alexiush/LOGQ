@@ -333,10 +333,10 @@ namespace LOGQ_Source_Generation
             sb.Append(WriteHeader(className, "LOGQ.Rule"));
 
             // Properties
-            sb.Append(WriteProperties("Variable", dataToGenerate.Properties));
+            sb.Append(WriteProperties("RuleVariable", dataToGenerate.Properties));
 
             // Constructor
-            sb.Append(WriteConstructor(className, "Variable", dataToGenerate.Properties));
+            sb.Append(WriteConstructor(className, "RuleVariable", dataToGenerate.Properties));
 
             // == and != overload
             sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
