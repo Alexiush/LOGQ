@@ -233,6 +233,9 @@ namespace LOGQ
             Value = value;
         }
 
+        public static implicit operator Equal<T>(T value)
+            => new Equal<T>(value);
+
         public static bool operator ==(Equal<T> fact, BoundVariable<T> otherFact)
         {
             return fact.Value.Equals(otherFact.Value);
