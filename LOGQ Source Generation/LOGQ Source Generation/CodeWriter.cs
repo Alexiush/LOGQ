@@ -135,22 +135,22 @@ namespace LOGQ_Source_Generation
         public override bool Equals(object? obj)
         {
             ")
-            .Append($"{type} bound = obj as {type}")
-            .Append(@";
-            ")
-            .Append($"{otherType} common = obj as {otherType}")
+            .Append($"{type} first = obj as {type}")
             .Append(@";
             
+            if (!(first is null))
+            {
+                return this == first;
+            }
             ")
-            .Append(@"if (!(bound is null))
-            {
-                return this == bound;
-            }
+            .Append($"{otherType} second = obj as {otherType}")
+            .Append(@";
             
-            if (!(common is null))
+            if (!(second is null))
             {
-                return this == common;
-            }
+                return this == second;
+            }")
+            .Append(@"
             
             return false;
         }
@@ -228,71 +228,59 @@ namespace LOGQ_Source_Generation
         private static string GenerateFact(GenerationData dataToGenerate)
         {
             var sb = new StringBuilder();
-
             string className = "Fact" + dataToGenerate.Name;
-
+            
+            sb
             // Header
-            sb.Append(WriteHeader(className, "LOGQ.Fact"));
-
+            .Append(WriteHeader(className, "LOGQ.Fact"))
             // Properties
-            sb.Append(WriteProperties("Variable", dataToGenerate.Properties));
-
+            .Append(WriteProperties("Variable", dataToGenerate.Properties))
             // Constructor
-            sb.Append(WriteConstructor(className, "Variable", dataToGenerate.Properties));
-
+            .Append(WriteConstructor(className, "Variable", dataToGenerate.Properties))
             // == and != overload
-            sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
-
+            .Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties))
+            // == and != overload for bound facts
+            .Append(EqualityOperatorsOverload(className, "Bound" + className, dataToGenerate.Properties))
+            // Equals
+            .Append(EqualsOverload(className, "Bound" + className))
             // GetHashCode overload
-            sb.Append(GetHashCodeOverload(dataToGenerate.Properties));
-
+            .Append(GetHashCodeOverload(dataToGenerate.Properties))
             // Get Type
-            sb.Append(TypeGetterOverload("FactType", dataToGenerate.OriginName));
-
+            .Append(TypeGetterOverload("FactType", dataToGenerate.OriginName))
             // Get IndexedStorage
-            sb.Append(IndexedStorageGetter("IndexedFactsStorage", "LOGQ.IIndexedFactsStorage", $"Indexed{className}Storage"));
-
+            .Append(IndexedStorageGetter("IndexedFactsStorage", "LOGQ.IIndexedFactsStorage", $"Indexed{className}Storage"))
             // End
-            sb.Append(@"
+            .Append(@"
     }
 ");
-
             return sb.ToString();
         }
 
         private static string GenerateBoundFact(GenerationData dataToGenerate)
         {
             var sb = new StringBuilder();
-
             string className = "BoundFact" + dataToGenerate.Name;
 
+            sb
             // Header
-            sb.Append(WriteHeader(className, "LOGQ.BoundFact"));
-
+            .Append(WriteHeader(className, "LOGQ.BoundFact"))
             // Properties
-            sb.Append(WriteProperties("BoundVariable", dataToGenerate.Properties));
-
+            .Append(WriteProperties("BoundVariable", dataToGenerate.Properties))
             // Constructor
-            sb.Append(WriteConstructor(className, "BoundVariable", dataToGenerate.Properties));
-
+            .Append(WriteConstructor(className, "BoundVariable", dataToGenerate.Properties))
             // == and != overload
-            sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
-
+            .Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties))
             // == and != with common Fact
-            sb.Append(EqualityOperatorsOverload(className, "Fact" + dataToGenerate.Name, dataToGenerate.Properties));
-
+            .Append(EqualityOperatorsOverload(className, "Fact" + dataToGenerate.Name, dataToGenerate.Properties))
             // Equals
-            sb.Append(EqualsOverload(className, $"Fact{dataToGenerate.Name}"));
-
+            .Append(EqualsOverload(className, $"Fact{dataToGenerate.Name}"))
             // Get Type
-            sb.Append(TypeGetterOverload("FactType", dataToGenerate.OriginName));
-
+            .Append(TypeGetterOverload("FactType", dataToGenerate.OriginName))
             // Get IndexedStorage
-            sb.Append(IndexedStorageGetter("IndexedFactsStorage", "LOGQ.IIndexedFactsStorage",
-                $"Indexed{"Fact" + dataToGenerate.Name}Storage"));
-
+            .Append(IndexedStorageGetter("IndexedFactsStorage", "LOGQ.IIndexedFactsStorage",
+                $"Indexed{"Fact" + dataToGenerate.Name}Storage"))
             // Bind
-            sb.Append(@"
+            .Append(@"
         public override void Bind(Fact fact, List<IBound> copyStorage)
         {
             if (fact.FactType() != FactType())
@@ -313,92 +301,69 @@ namespace LOGQ_Source_Generation
 
             sb.Append(@"
         }");
-
             // End
-
             sb.Append(@"
     }
 ");
-
             return sb.ToString();
         }
 
         private static string GenerateRule(GenerationData dataToGenerate)
         {
             var sb = new StringBuilder();
-
             string className = "Rule" + dataToGenerate.Name;
 
+            sb
             // Header
-            sb.Append(WriteHeader(className, "LOGQ.Rule"));
-
+            .Append(WriteHeader(className, "LOGQ.Rule"))
             // Properties
-            sb.Append(WriteProperties("RuleVariable", dataToGenerate.Properties));
-
+            .Append(WriteProperties("RuleVariable", dataToGenerate.Properties))
             // Constructor
-            sb.Append(WriteConstructor(className, "RuleVariable", dataToGenerate.Properties));
-
+            .Append(WriteConstructor(className, "RuleVariable", dataToGenerate.Properties))
             // == and != overload
-            sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
-
+            .Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties))
             // == and != with bound fact
-            sb.Append(EqualityOperatorsOverload(className, "Bound" + className, dataToGenerate.Properties));
-
+            .Append(EqualityOperatorsOverload(className, "Bound" + className, dataToGenerate.Properties))
             // Equals
-            sb.Append(EqualsOverload($"Bound{className}", className));
-
+            .Append(EqualsOverload($"Bound{className}", className))
             // Get Type
-            sb.Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName));
-
+            .Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName))
             // Get IndexedStorage
-            sb.Append(IndexedStorageGetter("IndexedRulesStorage", "LOGQ.IIndexedRulesStorage", $"Indexed{className}Storage"));
-
+            .Append(IndexedStorageGetter("IndexedRulesStorage", "LOGQ.IIndexedRulesStorage", $"Indexed{className}Storage"))
             // End
-
-            sb.Append(@"
+            .Append(@"
     }
 ");
-
             return sb.ToString();
         }
 
         private static string GenerateBoundRule(GenerationData dataToGenerate)
         {
             var sb = new StringBuilder();
-
             string className = "BoundRule" + dataToGenerate.Name;
 
+            sb
             // Header
-            sb.Append(WriteHeader(className, "LOGQ.BoundRule"));
-
+            .Append(WriteHeader(className, "LOGQ.BoundRule"))
             // Properties
-            sb.Append(WriteProperties("BoundVariable", dataToGenerate.Properties));
-
+            .Append(WriteProperties("BoundVariable", dataToGenerate.Properties))
             // Constructor
-            sb.Append(WriteConstructor(className, "BoundVariable", dataToGenerate.Properties));
-
+            .Append(WriteConstructor(className, "BoundVariable", dataToGenerate.Properties))
             // == and != overload
-            sb.Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties));
-
+            .Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties))
             // == and != for common rule
-            sb.Append(EqualityOperatorsOverload(className, "Rule" + dataToGenerate.Name, dataToGenerate.Properties));
-
+            .Append(EqualityOperatorsOverload(className, "Rule" + dataToGenerate.Name, dataToGenerate.Properties))
             // Equals
-            sb.Append(EqualsOverload(className, $"Rule{dataToGenerate.Name}"));
-
+            .Append(EqualsOverload($"Rule{dataToGenerate.Name}", className))
             // Get Type
-            sb.Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName));
-
+            .Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName))
             // Get IndexedStorage
-            sb.Append(IndexedStorageGetter("IndexedRulesStorage", "LOGQ.IIndexedRulesStorage",
-                $"Indexed{"Rule" + dataToGenerate.Name}Storage"));
-
+            .Append(IndexedStorageGetter("IndexedRulesStorage", "LOGQ.IIndexedRulesStorage",
+                $"Indexed{"Rule" + dataToGenerate.Name}Storage"))
             // End
-
-            sb.Append(@"
+            .Append(@"
     }
 ");
-
             return sb.ToString();
         }
 
@@ -429,7 +394,15 @@ namespace LOGQ_Source_Generation
                     {
                         sb.Append(", ");
                     }
-                    sb.Append($"origin.{property.PropertyName}");
+
+                    if (variablePrefix == "Rule")
+                    {
+                        sb.Append($"new Equal<{property.PropertyType}>(origin.{property.PropertyName})");
+                    }
+                    else
+                    {
+                        sb.Append($"origin.{property.PropertyName}");
+                    }
                 }
             }
 

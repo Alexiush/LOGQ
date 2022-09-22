@@ -60,6 +60,35 @@ namespace LOGQ
             return !(fact == otherFact);
         }
 
+        public static bool operator ==(FactAlias<T> fact, BoundFactAlias<T> otherFact)
+        {
+            return fact.Value.Equals(otherFact.Value);
+        }
+
+        public static bool operator !=(FactAlias<T> fact, BoundFactAlias<T> otherFact)
+        {
+            return !(fact == otherFact);
+        }
+
+        public override bool Equals(object obj)
+        {
+            FactAlias<T> factAlias = obj as FactAlias<T>;
+
+            if (factAlias is not null)
+            {
+                return factAlias == this;
+            }
+
+            BoundFactAlias<T> boundFactAlias = obj as BoundFactAlias<T>;
+
+            if (boundFactAlias is not null)
+            {
+                return boundFactAlias == this;
+            }
+
+            return false;
+        }
+
         public override int GetHashCode()
         {
             return Value.GetHashCode();
@@ -90,12 +119,12 @@ namespace LOGQ
             return !(fact == otherFact);
         }
 
-        public static bool operator ==(FactAlias<T> fact, BoundFactAlias<T> otherFact)
+        public static bool operator ==(BoundFactAlias<T> fact, FactAlias<T> otherFact)
         {
             return fact.Value.Equals(otherFact.Value);
         }
 
-        public static bool operator !=(FactAlias<T> fact, BoundFactAlias<T> otherFact)
+        public static bool operator !=(BoundFactAlias<T> fact, FactAlias<T> otherFact)
         {
             return !(fact == otherFact);
         }
