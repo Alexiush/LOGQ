@@ -88,7 +88,11 @@ namespace LOGQ_Source_Generation
             }
         }
 
-        // determine the namespace the class/enum/struct is declared in, if any
+        /// <summary>
+        /// determine the namespace the class/enum/struct is declared in, if any
+        /// </summary>
+        /// <param name="syntax">Syntax element to check for namespace</param>
+        /// <returns>Namespace name</returns>
         static string GetNamespace(BaseTypeDeclarationSyntax syntax)
         {
             // If we don't have a namespace at all we'll return an empty string

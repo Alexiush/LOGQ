@@ -34,6 +34,9 @@ namespace LOGQ
         public NoIndexingAttribute() { }
     }
 
+    /// <summary>
+    /// Attribute that marks inability to use clustering on this variable type
+    /// </summary>
     [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
     public class NotHashComparableAttribute: System.Attribute
     {
