@@ -799,7 +799,7 @@ namespace LOGQ
         {
             CheckIfCanBuild();
 
-            return With(copyStorage =>  _tree.Cut());
+            return With(() =>  _tree.Cut());
         }
 
         /// <summary>
@@ -811,7 +811,7 @@ namespace LOGQ
         {
             CheckIfCanBuild();
 
-            return With(copyStorage => false);
+            return With(() => false);
         }
 
         /// <summary>
@@ -823,7 +823,7 @@ namespace LOGQ
         {
             CheckIfCanBuild();
 
-            return With(copyStorage => true);
+            return With(() => true);
         }
 
         /// <summary>
