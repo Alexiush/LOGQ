@@ -48,7 +48,7 @@ if it can be proved that some chain consist of true statements - query returns t
 // Query does not require any initialization parameters
 public LogicalQuery() 
 {
-    _tree = new QueryTree(this);
+    _builder = new QueryTreeBuilder();
 }
 ```
 
@@ -73,6 +73,21 @@ Build methods add different logical actions to the query:
   }
 
   public LogicalQuery With(Predicate<List<IBound>> actionInitializer)
+  {
+      return AddNode(actionInitializer, true);
+  }
+
+  public LogicalQuery With(Func<bool> actionInitializer)
+  {
+      return AddNode(copyStorage => actionInitializer(), true);
+  }
+
+  public LogicalQuery With(Action<List<IBound>> actionInitializer)
+  {
+      return AddNode(actionInitializer, true);
+  }
+
+  public LogicalQuery With(Action actionInitializer)
   {
       return AddNode(actionInitializer, true);
   }
@@ -109,6 +124,21 @@ Build methods add different logical actions to the query:
       return AddNode(actionInitializer, false);
   }
 
+  public LogicalQuery OrWith(Func<bool> actionInitializer)
+  {
+      return AddNode(copyStorage => actionInitializer(), false);
+  }
+
+  public LogicalQuery OrWith(Action<List<IBound>> actionInitializer)
+  {
+      return AddNode(actionInitializer, false);
+  }
+
+  public LogicalQuery OrWith(Action actionInitializer)
+  {
+      return AddNode(actionInitializer, false);
+  }
+
   public LogicalQuery OrWith(BoundRule rule, KnowledgeBase knowledgeBase)
   {
       return AddNode(rule, knowledgeBase, false);
@@ -119,7 +149,7 @@ Build methods add different logical actions to the query:
       return AddNode(fact, knowledgeBase, false);
   }
   ```
-- WithScoped that adds action that executes nested logical query:
+- WithScoped and OrWithSoped that adds action that executes nested logical query:
   ```cs
   public LogicalQuery WithScoped(LogicalQuery innerQuery)
   {
@@ -143,6 +173,30 @@ Build methods add different logical actions to the query:
           }
       ));
   }
+  
+  public LogicalQuery OrWithScoped(LogicalQuery innerQuery)
+  {
+      CheckIfCanBuild();
+
+      innerQuery.End();
+      bool metTerminalCondition = false;
+
+      return OrWith(new BacktrackIterator(
+          () => {
+              if (metTerminalCondition)
+              {
+                  return null;
+              }
+
+              metTerminalCondition = !innerQuery.Execute();
+              return copyStorage => !metTerminalCondition;
+          },
+          () => {
+              innerQuery.Reset();
+              metTerminalCondition = false;
+          }
+      ));
+  }
   ```
 - Cut that sets current action as a new root of a query and prevents from backtracking further:
   ```cs
@@ -150,8 +204,7 @@ Build methods add different logical actions to the query:
   {
       CheckIfCanBuild();
 
-      bool madeCut = false;
-      return With(copyStorage =>  madeCut ? madeCut : _tree.Cut());
+      return With(() =>  _tree.Cut());
   }
   ```
 - Fail and Succeed:
@@ -160,14 +213,14 @@ Build methods add different logical actions to the query:
   {
       CheckIfCanBuild();
 
-      return With(copyStorage => false);
+      return With(() => false);
   }
 
   public LogicalQuery Succeed()
   {
       CheckIfCanBuild();
 
-      return With(copyStorage => true);
+      return With(() => true);
   }
   ```
   
@@ -187,16 +240,64 @@ namespace LOGQ.Extensions
         public static LogicalAction Not(Predicate<List<IBound>> actionToTry) 
             => Not(new List<Predicate<List<IBound>>> { actionToTry });
 
+        public static LogicalAction Not(Func<bool> actionToTry)
+            => Not(copyStorage => actionToTry());
+
+        public static LogicalAction Not(Action<List<IBound>> actionToTry)
+            => Not(new List<Predicate<List<IBound>>> { copyStorage => { actionToTry(copyStorage); return true; } });
+
+        public static LogicalAction Not(Action actionToTry)
+            => Not(new List<Predicate<List<IBound>>> { copyStorage => { actionToTry(); return true; } });
+
         public static LogicalAction Not(BacktrackIterator iterator)
         {
             return new LogicalAction(iterator.Negate());
         }
 
         public static LogicalAction Not(BoundFact fact, KnowledgeBase knowledgeBase)
-            => Not(knowledgeBase.CheckForFacts(fact));
+        {
+            bool hasConsulted = false;
+            BacktrackIterator factsIterator = null;
+
+            BacktrackIterator iterator = new BacktrackIterator(
+                () =>
+                {
+                    if (!hasConsulted)
+                    {
+                        factsIterator = new BacktrackIterator(knowledgeBase.CheckForFacts(fact));
+                        hasConsulted = true;
+                    }
+
+                    return factsIterator.GetNext();
+                },
+                () => hasConsulted = false
+
+            );
+
+            return Not(iterator);
+        }
 
         public static LogicalAction Not(BoundRule rule, KnowledgeBase knowledgeBase)
-            => Not(knowledgeBase.CheckForRules(rule));
+        {
+            bool hasConsulted = false;
+            BacktrackIterator ruleIterator = null;
+
+            BacktrackIterator iterator = new BacktrackIterator(
+                () =>
+                {
+                    if (!hasConsulted)
+                    {
+                        ruleIterator = knowledgeBase.CheckForRules(rule);
+                        hasConsulted = true;
+                    }
+
+                    return ruleIterator.GetNext();
+                },
+                () => hasConsulted = false
+            );
+
+            return Not(iterator);
+        }
     }
 }
 
@@ -209,8 +310,12 @@ There are three state control methods:
   ```cs
   public LogicalQuery End()
   {
-      _finishedBuilding = true;
+      if (_tree is null)
+      {
+          _tree = _builder.Build();
+      }
 
+      _finishedBuilding = true;
       return this;
   }
   ```
