@@ -24,7 +24,7 @@ Logical actions are abstractions used for query nodes, they define some sort of 
 and created by specifying a backtrack iterator that provides them with predicates to check.
 ```csharp
 LogicalQuery query = new LogicalQuery()
-  .With(copyStorage => 3 > 1);
+  .With(() => 3 > 1);
   
 // In this case predicate will be converted to list with one predicate
 // Then it will be converted to backtrack iterator which will iterate through that list
