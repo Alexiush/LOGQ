@@ -98,6 +98,20 @@ namespace LOGQ
         }
 
         /// <summary>
+        /// Updates variable value and adds record about change made to the copy storage
+        /// </summary>
+        /// <param name="copyStorage">Copy storage</param>
+        /// <param name="value">New variable value</param>
+        public void UpdateValue(List<IBound> copyStorage, Variable<T> variable)
+        {
+            copyStorage.Add(this);
+
+            var value = variable.Value;
+            copies.Push(value);
+            Value = value;
+        }
+
+        /// <summary>
         /// Returns variable to a state one change ago
         /// </summary>
         /// <exception cref="ArgumentException">
