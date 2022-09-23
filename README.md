@@ -12,10 +12,10 @@ Main feature is creating logical queries. They're built as trees with nodes repr
 Logical actions can be added using With method, some predefined logical actions can be added using Cut, Fail, Succed, WithScoped methods.
 ```csharp
 LogicalQuery query = new LogicalQuery()
-  .With(copyStorage => true) 
+  .With(() => true) 
   .Cut()
   .Fail()
-  .OrWith(copyStorage => 4 == 8/2)
+  .OrWith(() => 4 == 8/2)
   .Succed();
 ```
 
@@ -29,8 +29,8 @@ LogicalQuery query = new LogicalQuery()
 // In this case predicate will be converted to list with one predicate
 // Then it will be converted to backtrack iterator which will iterate through that list
 ```
-Logical actions only can be created by passing bactrack iterator, predicate or list of predicates to the logical query using With.
-If some of the given predicates is successful action returns true, if each predicate fails - action returns false.
+Logical actions can be created by passing bactrack iterator, action, predicate or collection of predicates to the logical query using With.
+If some of the given predicates is successful - logical action returns true, if each predicate fails - action returns false.
 
 ### Backtrack iterator
 Backtrack iterator is used to replace Prolog's predicate types with single abstraction.
@@ -39,14 +39,21 @@ It consists of generator function and reset action:
 - Reset action returns generator back to it's initial state.
 
 ```csharp
-// Backtrack iterator made for previous example
-// Predicate is inside ICollection<Predicate<List<IBound>>> actionInitializer
+// Backtrack iterator constructor for previous example
 
-var enumerator = actionInitializer.GetEnumerator();
+internal BacktrackIterator(ICollection<Predicate<List<IBound>>> initializer)
+{
+    bool enumeratorIsUpToDate = false;
+    var enumerator = initializer.GetEnumerator();
 
-_iterator = new BacktrackIterator(
-    () =>
-    {   
+    _generator = () =>
+    {
+        if (!enumeratorIsUpToDate)
+        {
+            enumerator = initializer.GetEnumerator();
+            enumeratorIsUpToDate = true;
+        }
+
         if (!enumerator.MoveNext())
         {
             return null;
@@ -54,9 +61,10 @@ _iterator = new BacktrackIterator(
 
         Predicate<List<IBound>> predicate = enumerator.Current;
         return predicate;
-    },
-    () => enumerator = actionInitializer.GetEnumerator()
-); 
+    };
+
+    _reset = () => enumeratorIsUpToDate = false;
+}
 ```
 
 ### Knowledge base
@@ -84,7 +92,7 @@ students.DeclareRule(new RuleWithBody(
         // If there is no record check higher grades up to 12th
         return new LogicalQuery()
           .With(new BoundFactStudent(boundRule.Name, boundRule.Grade), students)
-          .OrWith(context => boundRule.Grade.Value <= 12)
+          .OrWith(() => boundRule.Grade.Value <= 12)
           .With(new BoundRuleStudent(boundRule.Name, boundRule.Grade.Value + 1), students);
     }));
 ```
