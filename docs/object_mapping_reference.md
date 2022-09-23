@@ -46,9 +46,30 @@ public class FactAttribute : System.Attribute
     public MappingMode MappingMode { get; }
 }
 ```
+### Indexing attributes
+
+NoIndexingAttribute marks classes that are not suitable for fast fact-check with IIndexedFactsStorage on hashcodes.
+
+```cs
+[System.AttributeUsage(System.AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+public class NoIndexingAttribute: System.Attribute
+{
+    public NoIndexingAttribute() { }
+}
+```
+
+NoHashComparableAttribute marks class members that can't be used for indexing in IIndexedFactsStorage on hashcodes.
+
+```cs
+[System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+public class NotHashComparableAttribute: System.Attribute
+{
+    public NotHashComparableAttribute() { }
+}
+```
 
 ### Generated data
 
-Source generator will create classes Fact<i>FactName</i> BoundFact<i>FactName</i>, Rule<i>FactName</i>, BoundRule<i>FactName</i> for each marked class 
+Source generator will create classes Fact<i>FactName</i> BoundFact<i>FactName</i>, Rule<i>FactName</i>, BoundRule<i>FactName</i>, IndexedFact<i>FactName</i>Storage, IndexedRule<i>FactName</i>Storage for each marked class 
 in LOGQ.Generation namespace and functions <i>BaseClass</i>.AsFact, <i>BaseClass</i>.AsBoundFact, <i>BaseClass</i>.AsRule, <i>BaseClass</i>.AsBoundRule
 in static LOGQ.Generation.FactExtensions.
