@@ -21,7 +21,7 @@ if it will, state will be turned back to the moment before visiting last node (s
 Logical statements are handled with logical actions. Logical actions are iterating through available proofs defined as predicates.
 Logical actions can't be created by user directly, but by query itself. Their working principle is searching for 
 applicable predicate until they ran out of options, when they have applicable proof they return true, when they ran out of options - false.
-However, on backtrack they're always reset populated with options again.
+However, on backtrack they're always reset and populated with options again.
 
 ![pIcTuRe](https://i.imgur.com/VMNP5Qm.png)
 
@@ -33,13 +33,20 @@ and can be used to create logical action. Bactrack iterators must contain two pa
 - Reset action: function that changes generator state, so it can start over.
 
 ```cs
-// Function used to automatically convert collection of predicates (ICollection<Predicate<List<IBound>>> actionInitializer)
-// to the backtrack iterator
-var enumerator = actionInitializer.GetEnumerator();
+// BacktrackIterator constructor used to automatically convert collection of predicates (ICollection<Predicate<List<IBound>>> actionInitializer)
+internal BacktrackIterator(ICollection<Predicate<List<IBound>>> initializer)
+{
+    bool enumeratorIsUpToDate = false;
+    var enumerator = initializer.GetEnumerator();
 
-iterator = new BacktrackIterator(
-    () =>
-    {   
+    _generator = () =>
+    {
+        if (!enumeratorIsUpToDate)
+        {
+            enumerator = initializer.GetEnumerator();
+            enumeratorIsUpToDate = true;
+        }
+
         if (!enumerator.MoveNext())
         {
             return null;
@@ -47,22 +54,24 @@ iterator = new BacktrackIterator(
 
         Predicate<List<IBound>> predicate = enumerator.Current;
         return predicate;
-    },
-    () => enumerator = actionInitializer.GetEnumerator()
-); 
+    };
+
+    _reset = () => enumeratorIsUpToDate = false;
+}
 ```
 
 ### Ways to create logical action
 
 Logical actions can be created in many ways:
 - With method that accepts as initializers:
-  - Single predicate
+  - Action (with and without copy storage) 
+  - Single predicate (with and without copy storage)
   - Collection of predicates
   - Backtrack iterator
   - Bound fact + knowledge base to perform fact-check on
   - Bound rule + knowledge base to perform rule-check on 
-- WithScoped method that runs some query in scope
 - OrWith method that accepts same input as With method and used for branching
+- WithScoped and OrWithScoped methods that runs some query in scope
 - Fail and Succeed methods that predicates that always return false or true respectively
 - Cut method that blocks backtracking further then it's node
 
