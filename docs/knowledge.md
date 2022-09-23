@@ -592,7 +592,7 @@ students.DeclareRule(new RuleWithBody(
 
         return new LogicalQuery()
         .With(new BoundFactStudent(boundRule.Name, boundRule.Grade), students)
-        .OrWith(context => boundRule.Grade.Value <= 12)
+        .OrWith(() => boundRule.Grade.Value <= 12)
         .With(new BoundRuleStudent(boundRule.Name, boundRule.Grade.Value + 1), students);
     }));
 ```
