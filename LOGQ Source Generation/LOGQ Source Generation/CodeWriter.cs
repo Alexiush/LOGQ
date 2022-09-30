@@ -276,9 +276,6 @@ namespace LOGQ_Source_Generation
             .Append(EqualsOverload(className, $"Fact{dataToGenerate.Name}"))
             // Get Type
             .Append(TypeGetterOverload("FactType", dataToGenerate.OriginName))
-            // Get IndexedStorage
-            .Append(IndexedStorageGetter("IndexedFactsStorage", "LOGQ.IIndexedFactsStorage",
-                $"Indexed{"Fact" + dataToGenerate.Name}Storage"))
             // Bind
             .Append(@"
         public override void Bind(Fact fact, List<IBound> copyStorage)
@@ -357,9 +354,6 @@ namespace LOGQ_Source_Generation
             .Append(EqualsOverload($"Rule{dataToGenerate.Name}", className))
             // Get Type
             .Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName))
-            // Get IndexedStorage
-            .Append(IndexedStorageGetter("IndexedRulesStorage", "LOGQ.IIndexedRulesStorage",
-                $"Indexed{"Rule" + dataToGenerate.Name}Storage"))
             // End
             .Append(@"
     }
@@ -453,7 +447,7 @@ namespace LOGQ_Source_Generation
             // List of (Name)
             sb.Append(@"
         ")
-            .Append($"List<LOGQ.Fact> facts = new List<LOGQ.Fact>();")
+            .Append($"List<LOGQ.IFact> facts = new List<LOGQ.IFact>();")
             // HashSet of (Name)
             .Append(@"
         ")
@@ -462,10 +456,10 @@ namespace LOGQ_Source_Generation
         
         ");
 
-            // Dictionary<int, Cluster<Fact>> for each property
+            // Dictionary<int, Cluster<IFact>> for each property
             foreach (Property property in hashableProoerties)
             {
-                sb.Append($"Dictionary<int, Cluster<Fact>> {property.PropertyName} = new Dictionary<int, Cluster<Fact>>();").Append(@"
+                sb.Append($"Dictionary<int, Cluster<IFact>> {property.PropertyName} = new Dictionary<int, Cluster<IFact>>();").Append(@"
         ");
             }
 
@@ -491,7 +485,7 @@ namespace LOGQ_Source_Generation
             ").Append($"if (!{property.PropertyName}.ContainsKey({property.PropertyName}Hash))").Append(@"
             {
                 ")
-                    .Append($"{property.PropertyName}.Add({property.PropertyName}Hash, new Cluster<Fact>());").Append(@"
+                    .Append($"{property.PropertyName}.Add({property.PropertyName}Hash, new Cluster<IFact>());").Append(@"
             }").Append(@" 
             ")
                     .Append($"{property.PropertyName}[{property.PropertyName}Hash].Add(fact);").Append(@"
@@ -505,13 +499,13 @@ namespace LOGQ_Source_Generation
 
             // Get overload 
             sb.Append(@"
-        public List<LOGQ.Fact> FilteredBySample(LOGQ.BoundFact sample)
+        public List<LOGQ.IFact> FilteredBySample(LOGQ.BoundFact sample)
         {
             ")
                 .Append($"Bound{className} sampleCasted = (Bound{className})sample;")
                 // Aggregate list of tuples (cluster, size)
                 .Append(@"
-            List<(Cluster<Fact> cluster, int size)> clusters = new List<(Cluster<Fact> cluster, int size)>();
+            List<(Cluster<IFact> cluster, int size)> clusters = new List<(Cluster<IFact> cluster, int size)>();
             ");
                 
             foreach (Property property in hashableProoerties)
@@ -525,12 +519,12 @@ namespace LOGQ_Source_Generation
                 // Maybe add else for empty clusters to return them - 0 facts
                 .Append($"if ({property.PropertyName}.ContainsKey(code))").Append(@"
                 {
-                    ").Append($"Cluster<Fact> cluster = {property.PropertyName}[code];").Append(@"
+                    ").Append($"Cluster<IFact> cluster = {property.PropertyName}[code];").Append(@"
                     ").Append($"clusters.Add((cluster, cluster.Size));").Append(@"
                 }
                 else
                 {
-                    clusters.Add((new Cluster<Fact>(), 0));
+                    clusters.Add((new Cluster<IFact>(), 0));
                 }
             }
             
@@ -548,7 +542,7 @@ namespace LOGQ_Source_Generation
                 
                 if (factSet.Contains(factCopy))
                 {
-                    return new List<LOGQ.Fact> { (LOGQ.Fact)(factCopy) };
+                    return new List<LOGQ.IFact> { (LOGQ.Fact)(factCopy) };
                 }
             ")
             // Add each property value

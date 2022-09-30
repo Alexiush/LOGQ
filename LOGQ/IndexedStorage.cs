@@ -50,7 +50,7 @@ namespace LOGQ
     {
         public void Add(Fact fact);
 
-        public List<Fact> FilteredBySample(BoundFact sample);
+        public List<IFact> FilteredBySample(BoundFact sample);
     }
 
     /// <summary>

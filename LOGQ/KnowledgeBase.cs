@@ -5,17 +5,17 @@ using System.Linq;
 
 namespace LOGQ
 {
-    /// <summary>
-    /// Abstract class that marks facts
-    /// </summary>
-    public abstract class Fact 
+    public interface IFact
     {
         /// <summary>
         /// Returns type mapped to the fact
         /// </summary>
         /// <returns>Type mapped to the fact</returns>
         abstract public Type FactType();
+    }
 
+    public interface IStorageableFact
+    {
         /// <summary>
         /// Returns IndexedFactsCollection generated specifically for this type
         /// </summary>
@@ -24,10 +24,21 @@ namespace LOGQ
     }
 
     /// <summary>
+    /// Abstract class that marks facts
+    /// </summary>
+    public abstract class Fact: IFact, IStorageableFact
+    {
+        abstract public Type FactType();
+        abstract public IIndexedFactsStorage IndexedFactsStorage();
+    }
+
+    /// <summary>
     /// Fact with bound variables, used in queries, can bind to matching facts
     /// </summary>
-    public abstract class BoundFact : Fact 
+    public abstract class BoundFact : IFact 
     {
+        abstract public Type FactType();
+
         /// <summary>
         /// Binds fact values to the bound fact bound variables
         /// </summary>
@@ -36,17 +47,17 @@ namespace LOGQ
         abstract public void Bind(Fact fact, List<IBound> copyStorage);
     }
 
-    /// <summary>
-    /// Abstract class that marks rules
-    /// </summary>
-    public abstract class Rule 
+    public interface IRule
     {
         /// <summary>
         /// Returns type mapped to the rule
         /// </summary>
         /// <returns>Type mapped to the rule</returns>
         abstract public Type RuleType();
+    }
 
+    public interface IStorageableRule
+    {
         /// <summary>
         /// Returns IndexedRulesCollection generated specifically for this type
         /// </summary>
@@ -55,9 +66,21 @@ namespace LOGQ
     }
 
     /// <summary>
+    /// Abstract class that marks rules
+    /// </summary>
+    public abstract class Rule: IRule, IStorageableRule
+    {
+        abstract public Type RuleType();
+        abstract public IIndexedRulesStorage IndexedRulesStorage();
+    }
+
+    /// <summary>
     /// Ryle with bound variables, used in queries 
     /// </summary>
-    public abstract class BoundRule : Rule { }
+    public abstract class BoundRule : IRule 
+    {
+        abstract public Type RuleType();
+    }
 
     /// <summary>
     /// Class used to store rules in knowledge base.

@@ -11,22 +11,22 @@ namespace LOGQ
     /// <typeparam name="T">Type</typeparam>
     internal class IndexedFactsStorage<T> : IIndexedFactsStorage
     {
-        HashSet<Fact> facts;
+        HashSet<IFact> facts;
 
         public void Add(Fact fact)
         {
             facts.Add(fact);
         }
 
-        public List<Fact> FilteredBySample(BoundFact sample)
+        public List<IFact> FilteredBySample(BoundFact sample)
         {
             if (facts.Contains(sample))
             {
                 BoundFactAlias<T> factCasted = (BoundFactAlias<T>)sample;
-                return new List<Fact> { (Fact)(new FactAlias<T>(factCasted.Value)) };
+                return new List<IFact> { new FactAlias<T>(factCasted.Value) };
             }
 
-            return new List<Fact>();
+            return new List<IFact>();
         }
     }
 
@@ -173,11 +173,6 @@ namespace LOGQ
             return typeof(T);
         }
 
-        public override IIndexedFactsStorage IndexedFactsStorage()
-        {
-            return new IndexedFactsStorage<T>();
-        }
-
         public BoundFactAlias(BoundVariable<T> value)
         {
             Value = value;
@@ -302,11 +297,6 @@ namespace LOGQ
         public override Type RuleType()
         {
             return typeof(T);
-        }
-
-        public override IIndexedRulesStorage IndexedRulesStorage()
-        {
-            return new IndexedRulesStorage();
         }
     }
 
