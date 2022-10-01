@@ -477,7 +477,6 @@ namespace LOGQ_Source_Generation
             
             ");
             
-            // Maybe add those as functions and later call them from here
             foreach(Property property in hashableProoerties)
             {
                 sb.Append($"int {property.PropertyName}Hash = factCasted.{property.PropertyName}.Value.GetHashCode();")
@@ -489,6 +488,34 @@ namespace LOGQ_Source_Generation
             }").Append(@" 
             ")
                     .Append($"{property.PropertyName}[{property.PropertyName}Hash].Add(fact);").Append(@"
+            
+            ");
+            }
+
+            sb.Append(@"
+        }
+");
+
+            // Retract overload
+            sb.Append(@"
+        public void Retract(LOGQ.Fact fact)
+        {
+            ")
+             .Append($"{className} factCasted = ({className})fact;")
+                .Append(@"
+
+            facts.Remove(factCasted);")
+                .Append(@"
+            factSet.Remove(factCasted);
+            
+            ");
+
+            foreach (Property property in hashableProoerties)
+            {
+                sb.Append($"int {property.PropertyName}Hash = factCasted.{property.PropertyName}.Value.GetHashCode();")
+                    .Append(@"
+            ")
+                    .Append($"{property.PropertyName}[{property.PropertyName}Hash].Remove(fact);").Append(@"
             
             ");
             }
@@ -600,6 +627,16 @@ namespace LOGQ_Source_Generation
         
         ");
 
+           // Retract overload
+           sb.Append(@"
+        public void Retract(LOGQ.Fact fact)
+        {
+            ")
+                .Append("facts.Remove(fact);").Append(@"
+        }
+        
+        ");
+
             // Get overload 
             sb.Append(@"public List<LOGQ.Fact> FilteredBySample(LOGQ.BoundFact sample)
         {
@@ -640,6 +677,16 @@ namespace LOGQ_Source_Generation
         
         ");
 
+            // Retract overload
+            sb.Append(@"
+        public void Retract(LOGQ.RuleWithBody rule)
+        {
+            ")
+                .Append("rules.Remove(rule);").Append(@"
+        }
+        
+        ");
+
             // Get overload 
             sb.Append(@"public List<LOGQ.RuleWithBody> FilteredByPattern(LOGQ.BoundRule pattern)
         {
@@ -676,6 +723,16 @@ namespace LOGQ_Source_Generation
         {
             ")
                 .Append("rules.Add(rule);").Append(@"
+        }
+        
+        ");
+
+            // Add overload
+            sb.Append(@"
+        public void Retract(LOGQ.RuleWithBody rule)
+        {
+            ")
+                .Append("rules.Remove(rule);").Append(@"
         }
         
         ");

@@ -21,6 +21,11 @@ namespace LOGQ
             objects.Add(obj);
         }
 
+        public void Remove(T obj)
+        {
+            objects.Remove(obj);
+        }
+
         public List<T> GetValues()
             => objects.ToList();
     }
@@ -50,6 +55,8 @@ namespace LOGQ
     {
         public void Add(Fact fact);
 
+        public void Retract(Fact fact);
+
         public List<IFact> FilteredBySample(BoundFact sample);
     }
 
@@ -59,6 +66,8 @@ namespace LOGQ
     public interface IIndexedRulesStorage
     {
         public void Add(RuleWithBody rule);
+
+        public void Retract(RuleWithBody rule);
 
         public List<RuleWithBody> FilteredByPattern(BoundRule pattern);
     }

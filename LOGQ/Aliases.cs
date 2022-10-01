@@ -18,6 +18,11 @@ namespace LOGQ
             facts.Add(fact);
         }
 
+        public void Retract(Fact fact)
+        {
+            facts.Remove(fact);
+        }
+
         public List<IFact> FilteredBySample(BoundFact sample)
         {
             if (facts.Contains(sample))
@@ -40,6 +45,11 @@ namespace LOGQ
         public void Add(RuleWithBody rule)
         {
             rules.Add(rule);
+        }
+
+        public void Retract(RuleWithBody rule)
+        {
+            rules.Remove(rule);
         }
 
         public List<RuleWithBody> FilteredByPattern(BoundRule pattern)

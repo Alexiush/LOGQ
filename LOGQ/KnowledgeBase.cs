@@ -233,6 +233,12 @@ namespace LOGQ
             _facts[factType].Add(fact);
         }
 
+        public void RetractFact(Fact fact)
+        {
+            Type factType = fact.FactType();
+            _facts[factType].Retract(fact);
+        }
+
         /// <summary>
         /// Puts rule into the knowledge base
         /// </summary>
@@ -247,6 +253,12 @@ namespace LOGQ
             }
 
             _rules[ruleType].Add(rule);
+        }
+
+        public void RetractRule(RuleWithBody rule)
+        {
+            Type ruleType = rule.Head.RuleType();
+            _rules[ruleType].Retract(rule);
         }
     }
 }
