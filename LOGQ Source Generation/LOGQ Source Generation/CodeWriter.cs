@@ -664,12 +664,12 @@ namespace LOGQ_Source_Generation
 
             // List of (Name)
             sb.AppendLine(@"
-        List<LOGQ.RuleWithBody> rules = new List<LOGQ.RuleWithBody>();       
+        List<LOGQ.RuleTemplate> rules = new List<LOGQ.RuleTemplate>();       
     ");
 
             // Add overload
             sb.Append(@"
-        public void Add(LOGQ.RuleWithBody rule)
+        public void Add(LOGQ.RuleTemplate rule)
         {
             ")
                 .Append("rules.Add(rule);").Append(@"
@@ -679,7 +679,7 @@ namespace LOGQ_Source_Generation
 
             // Retract overload
             sb.Append(@"
-        public void Retract(LOGQ.RuleWithBody rule)
+        public void Retract(LOGQ.RuleTemplate rule)
         {
             ")
                 .Append("rules.Remove(rule);").Append(@"
@@ -688,7 +688,7 @@ namespace LOGQ_Source_Generation
         ");
 
             // Get overload 
-            sb.Append(@"public List<LOGQ.RuleWithBody> FilteredByPattern(LOGQ.BoundRule pattern)
+            sb.Append(@"public List<LOGQ.RuleTemplate> FilteredByPattern(LOGQ.BoundRule pattern)
         {
             ")
                 .Append("return rules.Where(rule => rule.Head.Equals(pattern)).ToList();").Append(@"
@@ -714,12 +714,12 @@ namespace LOGQ_Source_Generation
 
             // List of (Name)
             sb.AppendLine(@"
-        List<LOGQ.RuleWithBody> rules = new List<LOGQ.RuleWithBody>();       
+        List<LOGQ.RuleTemplate> rules = new List<LOGQ.RuleTemplate>();       
     ");
 
             // Add overload
             sb.Append(@"
-        public void Add(LOGQ.RuleWithBody rule)
+        public void Add(LOGQ.RuleTemplate rule)
         {
             ")
                 .Append("rules.Add(rule);").Append(@"
@@ -729,7 +729,7 @@ namespace LOGQ_Source_Generation
 
             // Add overload
             sb.Append(@"
-        public void Retract(LOGQ.RuleWithBody rule)
+        public void Retract(LOGQ.RuleTemplate rule)
         {
             ")
                 .Append("rules.Remove(rule);").Append(@"
@@ -738,7 +738,7 @@ namespace LOGQ_Source_Generation
         ");
 
             // Get overload 
-            sb.Append(@"public List<LOGQ.RuleWithBody> FilteredByPattern(LOGQ.BoundRule pattern)
+            sb.Append(@"public List<LOGQ.RuleTemplate> FilteredByPattern(LOGQ.BoundRule pattern)
         {
             ")
                 .Append("return rules.Where(rule => rule.Head.Equals(pattern)).ToList();").Append(@"

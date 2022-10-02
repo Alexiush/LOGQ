@@ -82,6 +82,23 @@ namespace LOGQ
         abstract public Type RuleType();
     }
 
+    public abstract class RuleTemplate
+    {
+        public Rule Head { get; protected set; }
+    }
+
+    public sealed class RuleWithBody<T> : RuleTemplate where T: BoundRule
+    {
+        public Func<T, LogicalQuery> Body { get; private set; }
+
+        public RuleWithBody(Rule head, Func<T, LogicalQuery> body)
+        {
+            this.Head = head;
+            this.Body = body;
+        }
+    }
+
+    /*
     /// <summary>
     /// Class used to store rules in knowledge base.
     /// Has a head - rule pattern to be matched and body - actions performed on matched bound rule
@@ -105,6 +122,7 @@ namespace LOGQ
             this.Body = body;
         }
     }
+    */
 
     /// <summary>
     /// Class that groups facts and rules.
@@ -158,13 +176,13 @@ namespace LOGQ
         /// <exception cref="ArgumentException">
         ///  When there is no rules of that type in a knowledge base
         /// </exception>
-        internal BacktrackIterator CheckForRules(BoundRule ruleHead)
+        internal BacktrackIterator CheckForRules<T>(T ruleHead) where T : BoundRule
         {
             Type ruleType = ruleHead.RuleType();
 
             if (_rules.ContainsKey(ruleType))
             {
-                List<RuleWithBody> rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
+                List<RuleTemplate> rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
                 LogicalQuery innerQuery = null;
                 bool enumeratorIsUpToDate = false;
                 var enumerator = rulesFiltered.GetEnumerator();
@@ -193,7 +211,7 @@ namespace LOGQ
 
                             if (innerQuery is null)
                             {
-                                innerQuery = enumerator.Current.Body(ruleHead);
+                                innerQuery = ((RuleWithBody<T>)(enumerator.Current)).Body((T)ruleHead);
                             }
 
                             bool result = innerQuery.Execute();
@@ -243,7 +261,7 @@ namespace LOGQ
         /// Puts rule into the knowledge base
         /// </summary>
         /// <param name="rule">Rule to be put</param>
-        public void DeclareRule(RuleWithBody rule)
+        public void DeclareRule<T>(RuleWithBody<T> rule) where T : BoundRule
         {
             Type ruleType = rule.Head.RuleType();
 
@@ -255,7 +273,7 @@ namespace LOGQ
             _rules[ruleType].Add(rule);
         }
 
-        public void RetractRule(RuleWithBody rule)
+        public void RetractRule<T>(RuleWithBody<T> rule) where T : BoundRule
         {
             Type ruleType = rule.Head.RuleType();
             _rules[ruleType].Retract(rule);

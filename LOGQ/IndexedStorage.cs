@@ -65,10 +65,10 @@ namespace LOGQ
     /// </summary>
     public interface IIndexedRulesStorage
     {
-        public void Add(RuleWithBody rule);
+        public void Add(RuleTemplate rule);
 
-        public void Retract(RuleWithBody rule);
+        public void Retract(RuleTemplate rule);
 
-        public List<RuleWithBody> FilteredByPattern(BoundRule pattern);
+        public List<RuleTemplate> FilteredByPattern(BoundRule pattern);
     }
 }

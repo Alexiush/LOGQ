@@ -40,19 +40,19 @@ namespace LOGQ
     /// </summary>
     internal class IndexedRulesStorage : IIndexedRulesStorage
     {
-        List<RuleWithBody> rules;
+        List<RuleTemplate> rules;
 
-        public void Add(RuleWithBody rule)
+        public void Add(RuleTemplate rule)
         {
             rules.Add(rule);
         }
 
-        public void Retract(RuleWithBody rule)
+        public void Retract(RuleTemplate rule)
         {
             rules.Remove(rule);
         }
 
-        public List<RuleWithBody> FilteredByPattern(BoundRule pattern)
+        public List<RuleTemplate> FilteredByPattern(BoundRule pattern)
         {
             return rules.Where(rule => rule.Head.Equals(pattern)).ToList();
         }
