@@ -85,16 +85,15 @@ namespace LOGQ
     public abstract class RuleTemplate
     {
         public Rule Head { get; protected set; }
+        public Func<BoundRule, LogicalQuery> Body { get; protected set; }
     }
 
     public sealed class RuleWithBody<T> : RuleTemplate where T: BoundRule
     {
-        public Func<T, LogicalQuery> Body { get; private set; }
-
         public RuleWithBody(Rule head, Func<T, LogicalQuery> body)
         {
             this.Head = head;
-            this.Body = body;
+            this.Body = bound => body((T)bound);
         }
     }
 
@@ -176,7 +175,7 @@ namespace LOGQ
         /// <exception cref="ArgumentException">
         ///  When there is no rules of that type in a knowledge base
         /// </exception>
-        internal BacktrackIterator CheckForRules<T>(T ruleHead) where T : BoundRule
+        internal BacktrackIterator CheckForRules(BoundRule ruleHead)
         {
             Type ruleType = ruleHead.RuleType();
 
@@ -211,7 +210,7 @@ namespace LOGQ
 
                             if (innerQuery is null)
                             {
-                                innerQuery = ((RuleWithBody<T>)(enumerator.Current)).Body((T)ruleHead);
+                                innerQuery = enumerator.Current.Body(ruleHead);
                             }
 
                             bool result = innerQuery.Execute();

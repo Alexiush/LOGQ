@@ -103,7 +103,7 @@ namespace LOGQ.Extensions
         /// <param name="knowledgeBase">Knowledge base searched for rule pattern</param>
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static LogicalAction Not<T>(T rule, KnowledgeBase knowledgeBase) where T: BoundRule
+        public static LogicalAction Not(BoundRule rule, KnowledgeBase knowledgeBase) 
         {
             bool hasConsulted = false;
             BacktrackIterator ruleIterator = null;

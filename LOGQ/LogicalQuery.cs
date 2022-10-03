@@ -464,7 +464,7 @@ namespace LOGQ
         /// <param name="pathDirection">May it be added to the current branch or or branch</param>
         /// <returns>Modified logical query</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private LogicalQuery AddNode<T>(T rule, KnowledgeBase knowledgeBase, bool pathDirection) where T : BoundRule
+        private LogicalQuery AddNode(BoundRule rule, KnowledgeBase knowledgeBase, bool pathDirection)
         {
             bool hasConsulted = false;
             BacktrackIterator ruleIterator = null;  
@@ -608,7 +608,7 @@ namespace LOGQ
         /// <param name="knowledgeBase">Knowledge base used for rule-checking</param>
         /// <returns>Modified logical query</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LogicalQuery With<T>(T rule, KnowledgeBase knowledgeBase) where T : BoundRule
+        public LogicalQuery With(BoundRule rule, KnowledgeBase knowledgeBase) 
         {
             return AddNode(rule, knowledgeBase, true);
         }
@@ -709,7 +709,7 @@ namespace LOGQ
         /// <param name="knowledgeBase">Knowledge base used for rule-checking</param>
         /// <returns>Modified logical query</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LogicalQuery OrWith<T>(T rule, KnowledgeBase knowledgeBase) where T : BoundRule
+        public LogicalQuery OrWith(BoundRule rule, KnowledgeBase knowledgeBase)
         {
             return AddNode(rule, knowledgeBase, false);
         }
