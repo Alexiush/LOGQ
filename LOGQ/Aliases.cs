@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Functional.Option;
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 
@@ -38,23 +40,30 @@ namespace LOGQ
     /// <summary>
     /// General implementation of RulesStorage
     /// </summary>
-    internal class IndexedRulesStorage : IIndexedRulesStorage
+    internal class IndexedRulesStorage<T> : IIndexedRulesStorage
     {
-        List<RuleTemplate> rules;
+        RulesDictionary<T> rulesClustered = new RulesDictionary<T>();
 
         public void Add(RuleTemplate rule)
         {
-            rules.Add(rule);
+            var ruleCasted = (RuleWithBody<BoundRuleAlias<T>>)rule;
+            rulesClustered.Add(((RuleAlias<T>)ruleCasted.Head).Value, rule);
         }
 
         public void Retract(RuleTemplate rule)
         {
-            rules.Remove(rule);
+            var ruleCasted = (RuleWithBody<BoundRuleAlias<T>>)rule;
+            rulesClustered.Retract(((RuleAlias<T>)ruleCasted.Head).Value, rule);
         }
 
         public List<RuleTemplate> FilteredByPattern(BoundRule pattern)
         {
-            return rules.Where(rule => rule.Head.Equals(pattern)).ToList();
+            var patternCasted = ((BoundRuleAlias<T>)pattern).Value;
+
+            return rulesClustered.Get(patternCasted.Value is null ? Option<int>.None : patternCasted.Value.GetHashCode())
+                .GetValues()
+                .Where(rule => rule.Head.Equals(pattern))
+                .ToList();
         }
     }
 
@@ -248,7 +257,7 @@ namespace LOGQ
 
         public override IIndexedRulesStorage IndexedRulesStorage()
         {
-            return new IndexedRulesStorage();
+            return new IndexedRulesStorage<T>();
         }
     }
 

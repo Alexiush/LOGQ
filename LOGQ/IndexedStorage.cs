@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Functional.Option;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,6 +14,11 @@ namespace LOGQ
         private List<T> objects = new List<T>();
 
         public Cluster() { }
+
+        public Cluster(List<T> objects)
+        {
+            this.objects = objects;
+        }
 
         public int Size { get { return objects.Count; } }
 
@@ -58,6 +64,94 @@ namespace LOGQ
         public void Retract(Fact fact);
 
         public List<IFact> FilteredBySample(BoundFact sample);
+    }
+
+    public class RulesDictionary<T>
+    {
+        public class PatternBasedIndexedCollection<T>
+        {
+            Dictionary<Option<int>, Cluster<RuleTemplate>> rules;
+
+            Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> addFilter;
+            Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> getFilter;
+
+            public PatternBasedIndexedCollection(RuleVariable<T> ruleVariable) 
+            { 
+                this.rules = new Dictionary<Option<int>, Cluster<RuleTemplate>>();
+
+                addFilter = ruleVariable.AddFilter();
+                getFilter = ruleVariable.GetFilter();
+            }
+
+            public IEnumerable<RuleTemplate> Get(Option<int> hash)
+            {
+                return getFilter(hash, rules)
+                    .Select(cluster => (IEnumerable<RuleTemplate>)cluster.GetValues())
+                    .Aggregate((acc, list) => acc.Concat(list));
+            }
+
+            public int Count(Option<int> hash)
+            {
+                return getFilter(hash, rules)
+                    .Select(cluster => cluster.Size)
+                    .Aggregate((acc, size) => acc + size);
+            }
+            
+            public void Add(Option<int> hash, RuleTemplate template)
+            {
+                addFilter(hash, rules).ForEach(cluster => cluster.Add(template));
+            }
+
+            public void Retract(Option<int> hash, RuleTemplate template)
+            {
+                addFilter(hash, rules).ForEach(cluster => cluster.Remove(template));
+            }
+        }
+
+        private Dictionary<Type, PatternBasedIndexedCollection<T>> patternBasedCollections;
+
+        public int Size(Option<int> hash)
+        {
+            return patternBasedCollections.Values
+                .Select(collection => collection.Count(hash))
+                .Aggregate((acc, size) => acc + size);
+        }
+
+        public Cluster<RuleTemplate> Get(Option<int> hash)
+        {
+            var values = patternBasedCollections.Values
+                .Select(collection => collection.Get(hash))
+                .Aggregate((acc, list) => acc.Concat(list))
+                .ToList();
+
+            return new Cluster<RuleTemplate>(values);
+        }
+
+        public void Add(RuleVariable<T> pattern, RuleTemplate template)
+        {
+            Option<int> hash = pattern.OptionHash();
+            Type patternType = pattern.PatternType();
+
+            if (!patternBasedCollections.ContainsKey(patternType))
+            {
+                patternBasedCollections.Add(patternType, new PatternBasedIndexedCollection<T>(pattern));
+            }
+
+            patternBasedCollections[patternType].Add(hash, template);
+        }
+
+        public void Retract(RuleVariable<T> pattern, RuleTemplate template)
+        {
+            Option<int> hash = pattern.OptionHash();
+            Type patternType = pattern.PatternType();
+
+            if (!patternBasedCollections.ContainsKey(patternType))
+            {
+                patternBasedCollections.Add(patternType, new PatternBasedIndexedCollection<T>(pattern));
+            }
+
+            patternBasedCollections[patternType].Retract(hash, template);
+        }
     }
 
     /// <summary>

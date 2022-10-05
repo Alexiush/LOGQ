@@ -437,7 +437,7 @@ namespace LOGQ_Source_Generation
             string className = "Fact" + data.Name;
             string storageName = $"Indexed{className}Storage";
 
-            List<Property> hashableProoerties = data.Properties.Where(p => p.CanBeHashed).ToList();
+            List<Property> hashableProperties = data.Properties.Where(p => p.CanBeHashed).ToList();
 
             var sb = new StringBuilder();
 
@@ -457,7 +457,7 @@ namespace LOGQ_Source_Generation
         ");
 
             // Dictionary<int, Cluster<IFact>> for each property
-            foreach (Property property in hashableProoerties)
+            foreach (Property property in hashableProperties)
             {
                 sb.Append($"Dictionary<int, Cluster<IFact>> {property.PropertyName} = new Dictionary<int, Cluster<IFact>>();").Append(@"
         ");
@@ -477,7 +477,7 @@ namespace LOGQ_Source_Generation
             
             ");
             
-            foreach(Property property in hashableProoerties)
+            foreach(Property property in hashableProperties)
             {
                 sb.Append($"int {property.PropertyName}Hash = factCasted.{property.PropertyName}.Value.GetHashCode();")
                     .Append(@"
@@ -510,7 +510,7 @@ namespace LOGQ_Source_Generation
             
             ");
 
-            foreach (Property property in hashableProoerties)
+            foreach (Property property in hashableProperties)
             {
                 sb.Append($"int {property.PropertyName}Hash = factCasted.{property.PropertyName}.Value.GetHashCode();")
                     .Append(@"
@@ -535,7 +535,7 @@ namespace LOGQ_Source_Generation
             List<(Cluster<IFact> cluster, int size)> clusters = new List<(Cluster<IFact> cluster, int size)>();
             ");
                 
-            foreach (Property property in hashableProoerties)
+            foreach (Property property in hashableProperties)
             {
                 sb.Append(@"
             ").Append($"if (sampleCasted.{property.PropertyName}.IsBound())").Append(@"
@@ -657,22 +657,36 @@ namespace LOGQ_Source_Generation
             string className = "Rule" + data.Name;
             string storageName = $"Indexed{className}Storage";
 
+            List<Property> hashableProperties = data.Properties.Where(p => p.CanBeHashed).ToList();
+
             var sb = new StringBuilder();
 
             // Header IndexedFact(Name)Storage
             sb.Append(WriteHeader(storageName, "LOGQ.IIndexedRulesStorage"));
 
-            // List of (Name)
-            sb.AppendLine(@"
-        List<LOGQ.RuleTemplate> rules = new List<LOGQ.RuleTemplate>();       
-    ");
+            foreach (Property property in hashableProperties)
+            {
+                sb.AppendLine(@" 
+                    " + $"RulesDictionary<{property.PropertyType}> rules = new RulesDictionary<{property.PropertyType}>();" + @"      
+                ");
+            }
+
 
             // Add overload
             sb.Append(@"
         public void Add(LOGQ.RuleTemplate rule)
         {
-            ")
-                .Append("rules.Add(rule);").Append(@"
+            ").Append($"var ruleCasted = (RuleWithBody<{"Bound" + className}>)rule;" + @"
+            ");
+            
+            foreach (Property property in hashableProperties)
+            {
+                sb.AppendLine(@" 
+                    " + $"rules.Add((({className})ruleCasted.Head).{property.PropertyName}, rule)" + @"      
+                ");
+            }
+
+            sb.Append(@"
         }
         
         ");
@@ -681,8 +695,17 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Retract(LOGQ.RuleTemplate rule)
         {
-            ")
-                .Append("rules.Remove(rule);").Append(@"
+            ").Append($"var ruleCasted = (RuleWithBody<{"Bound" + className}>)rule;" + @"
+            ");
+
+            foreach (Property property in hashableProperties)
+            {
+                sb.AppendLine(@" 
+                    " + $"rules.Retract((({className})ruleCasted.Head).{property.PropertyName}, rule)" + @"      
+                ");
+            }
+
+            sb.Append(@"
         }
         
         ");
@@ -690,9 +713,28 @@ namespace LOGQ_Source_Generation
             // Get overload 
             sb.Append(@"public List<LOGQ.RuleTemplate> FilteredByPattern(LOGQ.BoundRule pattern)
         {
+            ").Append($"var patternCasted = ({"Bound" + className})rule;" + @"
+            ").Append(@"
+            List<(Cluster<RuleTemplate> cluster, int size)> clusters = new List<(Cluster<RuleTemplate> cluster, int size)>();
+            
+");
+
+
+            foreach (Property property in hashableProperties)
+            {
+                sb.Append($"var cluster = rules.Get(patternCasted.{property.PropertyName}.Value is null ? Option<int>.None : patternCasted.Value.GetHashCode())").Append(@"
             ")
-                .Append("return rules.Where(rule => rule.Head.Equals(pattern)).ToList();").Append(@"
-        }");
+                .Append(@"clusters.Add((cluster, cluster.Size))
+            ");
+            }
+
+            sb.Append(@"
+            ").Append(@"
+                return clusters
+                .OrderBy(cluster => cluster.size)
+                .First()
+                .cluster
+                .GetValues();");
 
             // End
             sb.Append(@"

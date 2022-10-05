@@ -47,7 +47,7 @@ namespace LOGQ_Source_Generation
             Name = name;
             Namespace = nameSpace;
             Properties = properties;
-            CanBeIndexed = canBeIndexed;
+            CanBeIndexed = canBeIndexed || properties.All(property => !property.CanBeHashed);
         }
     }
 
