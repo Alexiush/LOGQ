@@ -14,7 +14,22 @@ namespace LOGQ_Source_Generation
             return char.ToLower(property[0]) + property.Remove(0, 1);
         }
 
-        private static string WriteHeader(string className, string inheritedClass)
+        private static string GenericAnnotation(GenerationData data)
+        {
+            if (data.Generics.Count == 0)
+            {
+                return "";
+            }
+
+            return $"<{string.Join(",", data.Generics)}>";
+        }
+
+        private static string GenericConstraints(GenerationData data)
+        {
+            return string.Join("\n", data.Constraints);
+        }
+
+        private static string WriteHeader(string className, string inheritedClass, GenerationData data)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -22,7 +37,9 @@ namespace LOGQ_Source_Generation
     public class ")
             .Append($"{className} : {inheritedClass}")
             .Append(@"
-    {");
+        ").Append(GenericConstraints(data)).Append(@"
+    {
+        ");
 
             return sb.ToString();
         }
@@ -211,14 +228,14 @@ namespace LOGQ_Source_Generation
             return sb.ToString();
         }
 
-        private static string IndexedStorageGetter(string getterName, string storageInterface, string storageType)
+        private static string IndexedStorageGetter(string getterName, string storageInterface, string storageType, GenerationData data)
         {
             var sb = new StringBuilder();
 
             sb.Append(@"
         public override " + storageInterface + " " + getterName + @"()
         {
-            return ").Append($"new {storageType}();").Append(@"
+            return ").Append($"new {storageType}{GenericAnnotation(data)}();").Append(@"
         }
 ");
 
@@ -228,15 +245,15 @@ namespace LOGQ_Source_Generation
         private static string GenerateFact(GenerationData dataToGenerate)
         {
             var sb = new StringBuilder();
-            string className = "Fact" + dataToGenerate.Name;
+            string className = "Fact" + dataToGenerate.Name + GenericAnnotation(dataToGenerate);
             
             sb
             // Header
-            .Append(WriteHeader(className, "LOGQ.Fact"))
+            .Append(WriteHeader(className, "LOGQ.Fact", dataToGenerate))
             // Properties
             .Append(WriteProperties("Variable", dataToGenerate.Properties))
             // Constructor
-            .Append(WriteConstructor(className, "Variable", dataToGenerate.Properties))
+            .Append(WriteConstructor("Fact" + dataToGenerate.Name, "Variable", dataToGenerate.Properties))
             // == and != overload
             .Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties))
             // == and != overload for bound facts
@@ -248,7 +265,7 @@ namespace LOGQ_Source_Generation
             // Get Type
             .Append(TypeGetterOverload("FactType", dataToGenerate.OriginName))
             // Get IndexedStorage
-            .Append(IndexedStorageGetter("IndexedFactsStorage", "LOGQ.IIndexedFactsStorage", $"Indexed{className}Storage"))
+            .Append(IndexedStorageGetter("IndexedFactsStorage", "LOGQ.IIndexedFactsStorage", $"Indexed{"Fact" + dataToGenerate.Name}Storage", dataToGenerate))
             // End
             .Append(@"
     }
@@ -259,21 +276,21 @@ namespace LOGQ_Source_Generation
         private static string GenerateBoundFact(GenerationData dataToGenerate)
         {
             var sb = new StringBuilder();
-            string className = "BoundFact" + dataToGenerate.Name;
+            string className = "BoundFact" + dataToGenerate.Name + GenericAnnotation(dataToGenerate);
 
             sb
             // Header
-            .Append(WriteHeader(className, "LOGQ.BoundFact"))
+            .Append(WriteHeader(className, "LOGQ.BoundFact", dataToGenerate))
             // Properties
             .Append(WriteProperties("BoundVariable", dataToGenerate.Properties))
             // Constructor
-            .Append(WriteConstructor(className, "BoundVariable", dataToGenerate.Properties))
+            .Append(WriteConstructor("BoundFact" + dataToGenerate.Name, "BoundVariable", dataToGenerate.Properties))
             // == and != overload
             .Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties))
             // == and != with common Fact
-            .Append(EqualityOperatorsOverload(className, "Fact" + dataToGenerate.Name, dataToGenerate.Properties))
+            .Append(EqualityOperatorsOverload(className, "Fact" + dataToGenerate.Name + GenericAnnotation(dataToGenerate), dataToGenerate.Properties))
             // Equals
-            .Append(EqualsOverload(className, $"Fact{dataToGenerate.Name}"))
+            .Append(EqualsOverload(className, $"Fact{dataToGenerate.Name + GenericAnnotation(dataToGenerate)}"))
             // Get Type
             .Append(TypeGetterOverload("FactType", dataToGenerate.OriginName))
             // Bind
@@ -287,7 +304,7 @@ namespace LOGQ_Source_Generation
                 .Append(@");
             }
             ")
-            .Append($"Fact{dataToGenerate.Name} typedFact = (Fact{dataToGenerate.Name})fact;");
+            .Append($"Fact{dataToGenerate.Name + GenericAnnotation(dataToGenerate)} typedFact = (Fact{dataToGenerate.Name + GenericAnnotation(dataToGenerate)})fact;");
 
             foreach (Property property in dataToGenerate.Properties)
             {
@@ -308,15 +325,15 @@ namespace LOGQ_Source_Generation
         private static string GenerateRule(GenerationData dataToGenerate)
         {
             var sb = new StringBuilder();
-            string className = "Rule" + dataToGenerate.Name;
+            string className = "Rule" + dataToGenerate.Name + GenericAnnotation(dataToGenerate);
 
             sb
             // Header
-            .Append(WriteHeader(className, "LOGQ.Rule"))
+            .Append(WriteHeader(className, "LOGQ.Rule", dataToGenerate))
             // Properties
             .Append(WriteProperties("RuleVariable", dataToGenerate.Properties))
             // Constructor
-            .Append(WriteConstructor(className, "RuleVariable", dataToGenerate.Properties))
+            .Append(WriteConstructor("Rule" + dataToGenerate.Name, "RuleVariable", dataToGenerate.Properties))
             // == and != overload
             .Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties))
             // == and != with bound fact
@@ -326,7 +343,7 @@ namespace LOGQ_Source_Generation
             // Get Type
             .Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName))
             // Get IndexedStorage
-            .Append(IndexedStorageGetter("IndexedRulesStorage", "LOGQ.IIndexedRulesStorage", $"Indexed{className}Storage"))
+            .Append(IndexedStorageGetter("IndexedRulesStorage", "LOGQ.IIndexedRulesStorage", $"Indexed{"Rule" + dataToGenerate.Name}Storage", dataToGenerate))
             // End
             .Append(@"
     }
@@ -337,21 +354,21 @@ namespace LOGQ_Source_Generation
         private static string GenerateBoundRule(GenerationData dataToGenerate)
         {
             var sb = new StringBuilder();
-            string className = "BoundRule" + dataToGenerate.Name;
+            string className = "BoundRule" + dataToGenerate.Name + GenericAnnotation(dataToGenerate);
 
             sb
             // Header
-            .Append(WriteHeader(className, "LOGQ.BoundRule"))
+            .Append(WriteHeader(className, "LOGQ.BoundRule", dataToGenerate))
             // Properties
             .Append(WriteProperties("BoundVariable", dataToGenerate.Properties))
             // Constructor
-            .Append(WriteConstructor(className, "BoundVariable", dataToGenerate.Properties))
+            .Append(WriteConstructor("BoundRule" + dataToGenerate.Name, "BoundVariable", dataToGenerate.Properties))
             // == and != overload
             .Append(EqualityOperatorsOverload(className, className, dataToGenerate.Properties))
             // == and != for common rule
-            .Append(EqualityOperatorsOverload(className, "Rule" + dataToGenerate.Name, dataToGenerate.Properties))
+            .Append(EqualityOperatorsOverload(className, "Rule" + dataToGenerate.Name + GenericAnnotation(dataToGenerate), dataToGenerate.Properties))
             // Equals
-            .Append(EqualsOverload($"Rule{dataToGenerate.Name}", className))
+            .Append(EqualsOverload($"Rule{dataToGenerate.Name + GenericAnnotation(dataToGenerate)}", className))
             // Get Type
             .Append(TypeGetterOverload("RuleType", dataToGenerate.OriginName))
             // End
@@ -365,15 +382,17 @@ namespace LOGQ_Source_Generation
         {
             var sb = new StringBuilder();
 
-            string className = classPrefix + generatedClass.Name;
+            string className = classPrefix + generatedClass.Name + GenericAnnotation(generatedClass);
 
             sb.Append(@"
         public static ")
             .Append(className)
-            .Append($" As{classPrefix}(")
+            .Append($" As{classPrefix}{GenericAnnotation(generatedClass)}(")
             .Append($"this {generatedClass.OriginName} origin");
 
             sb.Append(@")
+            ").Append(GenericConstraints(generatedClass))
+            .Append(@"
         {
             ")
             .Append($"return new {className}(");
@@ -434,15 +453,15 @@ namespace LOGQ_Source_Generation
 
         private static string GenerateIndexedFactsStorage(GenerationData data)
         {
-            string className = "Fact" + data.Name;
-            string storageName = $"Indexed{className}Storage";
+            string className = "Fact" + data.Name + GenericAnnotation(data);
+            string storageName = $"Indexed{"Fact" + data.Name}Storage" + GenericAnnotation(data);
 
             List<Property> hashableProperties = data.Properties.Where(p => p.CanBeHashed).ToList();
 
             var sb = new StringBuilder();
 
             // Header IndexedFact(Name)Storage
-            sb.Append(WriteHeader(storageName, "LOGQ.IIndexedFactsStorage"));
+            sb.Append(WriteHeader(storageName, "LOGQ.IIndexedFactsStorage", data));
 
             // List of (Name)
             sb.Append(@"
@@ -604,13 +623,13 @@ namespace LOGQ_Source_Generation
 
         private static string GenerateSimpleFactsStorage(GenerationData data)
         {
-            string className = "Fact" + data.Name;
-            string storageName = $"Indexed{className}Storage";
+            string className = "Fact" + data.Name + GenericAnnotation(data);
+            string storageName = $"Indexed{"Fact" + data.Name}Storage" + GenericAnnotation(data);
 
             var sb = new StringBuilder();
 
             // Header IndexedFact(Name)Storage
-            sb.Append(WriteHeader(storageName, "LOGQ.IIndexedFactsStorage"));
+            sb.Append(WriteHeader(storageName, "LOGQ.IIndexedFactsStorage", data));
 
             // List of (Name)
             sb.AppendLine(@"
@@ -654,20 +673,20 @@ namespace LOGQ_Source_Generation
 
         private static string GenerateIndexedRulesStorage(GenerationData data)
         {
-            string className = "Rule" + data.Name;
-            string storageName = $"Indexed{className}Storage";
+            string className = "Rule" + data.Name + GenericAnnotation(data);
+            string storageName = $"Indexed{"Rule" + data.Name}Storage" + GenericAnnotation(data);
 
             List<Property> hashableProperties = data.Properties.Where(p => p.CanBeHashed).ToList();
 
             var sb = new StringBuilder();
 
             // Header IndexedFact(Name)Storage
-            sb.Append(WriteHeader(storageName, "LOGQ.IIndexedRulesStorage"));
+            sb.Append(WriteHeader(storageName, "LOGQ.IIndexedRulesStorage", data));
 
             foreach (Property property in hashableProperties)
             {
                 sb.AppendLine(@" 
-                    " + $"RulesDictionary<{property.PropertyType}> rules = new RulesDictionary<{property.PropertyType}>();" + @"      
+                    " + $"RulesDictionary<{property.PropertyType}> {property.PropertyName} = new RulesDictionary<{property.PropertyType}>();" + @"      
                 ");
             }
 
@@ -682,7 +701,7 @@ namespace LOGQ_Source_Generation
             foreach (Property property in hashableProperties)
             {
                 sb.AppendLine(@" 
-                    " + $"rules.Add((({className})ruleCasted.Head).{property.PropertyName}, rule)" + @"      
+                    " + $"{property.PropertyName}.Add((({className})ruleCasted.Head).{property.PropertyName}, rule);" + @"      
                 ");
             }
 
@@ -701,7 +720,7 @@ namespace LOGQ_Source_Generation
             foreach (Property property in hashableProperties)
             {
                 sb.AppendLine(@" 
-                    " + $"rules.Retract((({className})ruleCasted.Head).{property.PropertyName}, rule)" + @"      
+                    " + $"{property.PropertyName}.Retract((({className})ruleCasted.Head).{property.PropertyName}, rule);" + @"      
                 ");
             }
 
@@ -713,7 +732,7 @@ namespace LOGQ_Source_Generation
             // Get overload 
             sb.Append(@"public List<LOGQ.RuleTemplate> FilteredByPattern(LOGQ.BoundRule pattern)
         {
-            ").Append($"var patternCasted = ({"Bound" + className})rule;" + @"
+            ").Append($"var patternCasted = ({"Bound" + className})pattern;" + @"
             ").Append(@"
             List<(Cluster<RuleTemplate> cluster, int size)> clusters = new List<(Cluster<RuleTemplate> cluster, int size)>();
             
@@ -722,9 +741,9 @@ namespace LOGQ_Source_Generation
 
             foreach (Property property in hashableProperties)
             {
-                sb.Append($"var cluster = rules.Get(patternCasted.{property.PropertyName}.Value is null ? Option<int>.None : patternCasted.Value.GetHashCode())").Append(@"
+                sb.Append($"var {property.PropertyName}Cluster = {property.PropertyName}.Get(!patternCasted.{property.PropertyName}.IsBound() ? Option<int>.None : patternCasted.{property.PropertyName}.Value.GetHashCode());").Append(@"
             ")
-                .Append(@"clusters.Add((cluster, cluster.Size))
+                .Append($"clusters.Add(({property.PropertyName}Cluster, {property.PropertyName}Cluster.Size));" + @"
             ");
             }
 
@@ -736,6 +755,11 @@ namespace LOGQ_Source_Generation
                 .cluster
                 .GetValues();");
 
+            sb.Append(@"
+        }
+        
+        ");
+
             // End
             sb.Append(@"
     }
@@ -746,13 +770,13 @@ namespace LOGQ_Source_Generation
 
         private static string GenerateSimpleRulesStorage(GenerationData data)
         {
-            string className = "Rule" + data.Name;
-            string storageName = $"Indexed{className}Storage";
+            string className = "Rule" + data.Name + GenericAnnotation(data);
+            string storageName = $"Indexed{"Rule" + data.Name}Storage" + GenericAnnotation(data);
 
             var sb = new StringBuilder();
 
             // Header IndexedFact(Name)Storage
-            sb.Append(WriteHeader(storageName, "LOGQ.IIndexedRulesStorage"));
+            sb.Append(WriteHeader(storageName, "LOGQ.IIndexedRulesStorage", data));
 
             // List of (Name)
             sb.AppendLine(@"
@@ -834,6 +858,7 @@ namespace LOGQ_Source_Generation
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Functional.Option;
 
 ");
 

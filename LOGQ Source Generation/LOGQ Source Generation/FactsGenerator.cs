@@ -9,6 +9,8 @@ using System.Collections.Immutable;
 using System.Threading;
 using System.IO;
 using Microsoft.CodeAnalysis.CSharp;
+using System.Text.RegularExpressions;
+using System.Reflection.Metadata;
 
 namespace LOGQ_Source_Generation
 {
@@ -36,18 +38,37 @@ namespace LOGQ_Source_Generation
     {
         public readonly string OriginName;
         public readonly string Name;
-        public string Namespace;
+        public readonly string Namespace;
         public readonly List<Property> Properties;
-        public bool CanBeIndexed;
+        public readonly bool CanBeIndexed;
+        public readonly List<string> Generics;
+        public readonly List<string> Constraints;
+
+        private static List<string> GetGenerics(string name)
+        {
+            Regex genericParameter = new Regex(@"\<(.*?)\>");
+            ImmutableHashSet<string> set = genericParameter.Matches(name)
+                .Cast<Match>()
+                .Select(m => m.Value
+                    .Substring(1, m.Length - 2)
+                    .Replace(" ", string.Empty)
+                    .Split(','))
+                .SelectMany(s => s)
+                .ToImmutableHashSet();
+
+            return set.ToList();
+        }
 
         public GenerationData(string originName, string name, string nameSpace, 
-            List<Property> properties, bool canBeIndexed)
+            List<Property> properties, bool canBeIndexed, List<string> constraints)
         {
             OriginName = originName;
             Name = name;
             Namespace = nameSpace;
             Properties = properties;
             CanBeIndexed = canBeIndexed || properties.All(property => !property.CanBeHashed);
+            Generics = GetGenerics(originName);
+            Constraints = constraints;
         }
     }
 
@@ -87,6 +108,28 @@ namespace LOGQ_Source_Generation
                 return FieldTypeReciever(member);
             }
         }
+
+        private static List<string> GetConstraints(BaseTypeDeclarationSyntax typeSyntax)
+        {
+            List<string> constraints = new List<string>();
+
+            TypeDeclarationSyntax? syntax = typeSyntax as TypeDeclarationSyntax;
+
+            while (syntax != null && IsAllowedKind(syntax.Kind()))
+            {
+                constraints.Add(syntax.ConstraintClauses.ToString());
+                syntax = (syntax.Parent as TypeDeclarationSyntax);
+            }
+
+            return constraints
+                .Where(constraint => constraint is not null && constraint.Trim() != "")
+                .ToList();
+        }
+
+        static bool IsAllowedKind(SyntaxKind kind) =>
+            kind == SyntaxKind.ClassDeclaration ||
+            kind == SyntaxKind.StructDeclaration ||
+            kind == SyntaxKind.RecordDeclaration;
 
         /// <summary>
         /// determine the namespace the class/enum/struct is declared in, if any
@@ -305,7 +348,7 @@ namespace LOGQ_Source_Generation
                 string classNamespace = GetNamespace(classDeclarationSyntax);
                 // Create a GenerationData for use in the generation phase
                 classesToGenerate.Add(new GenerationData(classSymbol.ToDisplayString(), 
-                    className, classNamespace, properties, canBeIndexed));
+                    className, classNamespace, properties, canBeIndexed, GetConstraints(classDeclarationSyntax)));
             }
 
             return classesToGenerate;

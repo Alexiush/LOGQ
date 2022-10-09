@@ -623,7 +623,7 @@ namespace LOGQ
                 hash.Match(
                     Some: (value) => { },
                     None: () => {
-                        if (dictionary.ContainsKey(0))
+                        if (!dictionary.ContainsKey(0))
                         {
                             dictionary.Add(0, new Cluster<RuleTemplate>());
                         }

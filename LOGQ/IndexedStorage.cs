@@ -85,14 +85,18 @@ namespace LOGQ
 
             public IEnumerable<RuleTemplate> Get(Option<int> hash)
             {
-                return getFilter(hash, rules)
+                var list = getFilter(hash, rules);
+
+                return list.Count() == 0 ? new List<RuleTemplate>() : list
                     .Select(cluster => (IEnumerable<RuleTemplate>)cluster.GetValues())
                     .Aggregate((acc, list) => acc.Concat(list));
             }
 
             public int Count(Option<int> hash)
             {
-                return getFilter(hash, rules)
+                var list = getFilter(hash, rules);
+
+                return list.Count == 0 ? 0 : list
                     .Select(cluster => cluster.Size)
                     .Aggregate((acc, size) => acc + size);
             }
@@ -108,19 +112,24 @@ namespace LOGQ
             }
         }
 
-        private Dictionary<Type, PatternBasedIndexedCollection<T>> patternBasedCollections;
+        private Dictionary<Type, PatternBasedIndexedCollection<T>> patternBasedCollections = 
+            new Dictionary<Type, PatternBasedIndexedCollection<T>>();
 
         public int Size(Option<int> hash)
         {
-            return patternBasedCollections.Values
+            var list = patternBasedCollections.Values;
+                
+            return list.Count == 0 ? 0 : list
                 .Select(collection => collection.Count(hash))
                 .Aggregate((acc, size) => acc + size);
         }
 
         public Cluster<RuleTemplate> Get(Option<int> hash)
         {
-            var values = patternBasedCollections.Values
-                .Select(collection => collection.Get(hash))
+            var list = patternBasedCollections.Values
+                .Select(collection => collection.Get(hash));
+
+            var values = list.Count() == 0 ? new List<RuleTemplate>() : list
                 .Aggregate((acc, list) => acc.Concat(list))
                 .ToList();
 
