@@ -27,7 +27,7 @@ namespace LOGQ
     /// <summary>
     /// Marker attribute for mapper that creates fact and rule representations of a class
     /// </summary>
-    [System.AttributeUsage(System.AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
     public class FactAttribute : System.Attribute
     {
         /// <summary>

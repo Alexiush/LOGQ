@@ -184,10 +184,10 @@ namespace LOGQ_Source_Generation
         /// Gets data from class declaration syntax objects
         /// </summary>
         /// <param name="compilation">Compilation</param>
-        /// <param name="classes">Classes marked by attribute</param>
+        /// <param name="typeDeclarations">Classes marked by attribute</param>
         /// <param name="ct">Cancellation token</param>
         /// <returns>List of data needed to generate facts/rules</returns>
-        static List<GenerationData> GetTypesToGenerate(Compilation compilation, IEnumerable<ClassDeclarationSyntax> classes, CancellationToken ct)
+        static List<GenerationData> GetTypesToGenerate(Compilation compilation, IEnumerable<BaseTypeDeclarationSyntax> typeDeclarations, CancellationToken ct)
         {
             // Create a list to hold output
             var classesToGenerate = new List<GenerationData>();
@@ -202,7 +202,7 @@ namespace LOGQ_Source_Generation
                 return classesToGenerate;
             }
 
-            foreach (ClassDeclarationSyntax classDeclarationSyntax in classes)
+            foreach (BaseTypeDeclarationSyntax classDeclarationSyntax in typeDeclarations)
             {
                 // stop if we're asked to
                 ct.ThrowIfCancellationRequested();
@@ -358,20 +358,20 @@ namespace LOGQ_Source_Generation
         /// Generates code
         /// </summary>
         /// <param name="compilation">Compilation</param>
-        /// <param name="classes">Marked classes</param>
+        /// <param name="typeDeclarations">Marked classes</param>
         /// <param name="context">Source production context</param>
-        static void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax> classes, SourceProductionContext context)
+        static void Execute(Compilation compilation, ImmutableArray<BaseTypeDeclarationSyntax> typeDeclarations, SourceProductionContext context)
         {
-            if (classes.IsDefaultOrEmpty)
+            if (typeDeclarations.IsDefaultOrEmpty)
             {
                 // nothing to do
                 return;
             }
 
-            IEnumerable<ClassDeclarationSyntax> distinctEnums = classes.Distinct();
+            IEnumerable<BaseTypeDeclarationSyntax> distinctDeclarations = typeDeclarations.Distinct();
 
             // Convert each ClassDeclarationSyntax to a GenerationData
-            List<GenerationData> classesToGenerate = GetTypesToGenerate(compilation, distinctEnums, context.CancellationToken);
+            List<GenerationData> classesToGenerate = GetTypesToGenerate(compilation, distinctDeclarations, context.CancellationToken);
 
             // If there were errors in the ClassDeclarationSyntax, we won't create a
             // GenerationData for it, so make sure we have something to generate
@@ -394,15 +394,15 @@ namespace LOGQ_Source_Generation
             // Check which of them have our attribute
 
             static bool IsSyntaxTargetForGeneration(SyntaxNode node)
-                => node is ClassDeclarationSyntax m && m.AttributeLists.Count > 0;
+                => node is BaseTypeDeclarationSyntax m && IsAllowedKind(m.Kind()) && m.AttributeLists.Count > 0;
 
-            static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+            static BaseTypeDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
             {
-                // we know the node is a ClassDeclarationSyntax thanks to IsSyntaxTargetForGeneration
-                var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
+                // we know the node is a BaseTypeDeclarationSyntax thanks to IsSyntaxTargetForGeneration
+                var baseDeclarationSyntax = (BaseTypeDeclarationSyntax)context.Node;
 
                 // loop through all the attributes on the method
-                foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
+                foreach (AttributeListSyntax attributeListSyntax in baseDeclarationSyntax.AttributeLists)
                 {
                     foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
                     {
@@ -419,7 +419,7 @@ namespace LOGQ_Source_Generation
                         if (fullName == "LOGQ.FactAttribute")
                         {
                             // return the class
-                            return classDeclarationSyntax;
+                            return baseDeclarationSyntax;
                         }
                     }
                 }
@@ -428,14 +428,14 @@ namespace LOGQ_Source_Generation
                 return null;
             }
 
-            IncrementalValuesProvider<ClassDeclarationSyntax> classDeclarations = context.SyntaxProvider
+            IncrementalValuesProvider<BaseTypeDeclarationSyntax> classDeclarations = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (s, _) => IsSyntaxTargetForGeneration(s),             // select classes with attributes
                 transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx))      // select the class with the [EnumExtensions] attribute
             .Where(static m => m is not null)!; // filter out attributed enums that we don't care about
 
             // Add selected classes
-            IncrementalValueProvider<(Compilation, ImmutableArray<ClassDeclarationSyntax>)> compilationAndClasses
+            IncrementalValueProvider<(Compilation, ImmutableArray<BaseTypeDeclarationSyntax>)> compilationAndClasses
             = context.CompilationProvider.Combine(classDeclarations.Collect());
 
             // Go in compile
