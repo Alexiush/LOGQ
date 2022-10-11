@@ -876,13 +876,20 @@ using Functional.Option;
 
                 if (data.CanBeIndexed)
                 {
-                    classSB.Append(GenerateIndexedFactsStorage(data))
-                    .Append(GenerateIndexedRulesStorage(data));
+                    classSB.Append(GenerateIndexedFactsStorage(data));
                 }
                 else
                 {
-                    classSB.Append(GenerateSimpleFactsStorage(data))
-                    .Append(GenerateSimpleRulesStorage(data));
+                    classSB.Append(GenerateSimpleFactsStorage(data));
+                }
+
+                if (data.CanBeIndexed && data.HighRuleCountDomain)
+                {
+                    classSB.Append(GenerateIndexedRulesStorage(data));
+                }
+                else
+                {
+                    classSB.Append(GenerateSimpleRulesStorage(data));
                 }
 
                 // Add extension class that generates conversions to Fact classes

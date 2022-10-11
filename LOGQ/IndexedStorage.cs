@@ -39,7 +39,7 @@ namespace LOGQ
     /// <summary>
     /// Attribute that marks inability to use clustering on this fact type
     /// </summary>
-    [System.AttributeUsage(System.AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
     public class NoIndexingAttribute: System.Attribute
     {
         public NoIndexingAttribute() { }
@@ -52,6 +52,12 @@ namespace LOGQ
     public class NotHashComparableAttribute: System.Attribute
     {
         public NotHashComparableAttribute() { }
+    }
+
+    [System.AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
+    public class HighRuleCountDomainAttribute: System.Attribute
+    {
+        public HighRuleCountDomainAttribute() { }
     }
 
     /// <summary>

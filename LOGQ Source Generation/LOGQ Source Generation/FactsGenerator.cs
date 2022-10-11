@@ -40,9 +40,11 @@ namespace LOGQ_Source_Generation
         public readonly string Name;
         public readonly string Namespace;
         public readonly List<Property> Properties;
-        public readonly bool CanBeIndexed;
         public readonly List<string> Generics;
         public readonly List<string> Constraints;
+
+        public readonly bool CanBeIndexed;
+        public readonly bool HighRuleCountDomain;
 
         private static List<string> GetGenerics(string name)
         {
@@ -60,13 +62,14 @@ namespace LOGQ_Source_Generation
         }
 
         public GenerationData(string originName, string name, string nameSpace, 
-            List<Property> properties, bool canBeIndexed, List<string> constraints)
+            List<Property> properties, bool canBeIndexed, bool highRuleCountDomain, List<string> constraints)
         {
             OriginName = originName;
             Name = name;
             Namespace = nameSpace;
             Properties = properties;
             CanBeIndexed = canBeIndexed || properties.All(property => !property.CanBeHashed);
+            HighRuleCountDomain = highRuleCountDomain;
             Generics = GetGenerics(originName);
             Constraints = constraints;
         }
@@ -194,6 +197,7 @@ namespace LOGQ_Source_Generation
             // Get the semantic representation of marker attribute 
             INamedTypeSymbol? classAttribute = compilation.GetTypeByMetadataName("LOGQ.FactAttribute");
             INamedTypeSymbol? noIndexingAttribute = compilation.GetTypeByMetadataName("LOGQ.NoIndexingAttribute");
+            INamedTypeSymbol? highRuleCountDomainAttribute = compilation.GetTypeByMetadataName("LOGQ.HighRuleCountDomainAttribute");
 
             if (classAttribute == null)
             {
@@ -219,11 +223,15 @@ namespace LOGQ_Source_Generation
                 string className = classSymbol.ToDisplayString();
                 int mappingMode = 0;
                 bool canBeIndexed = true;
+                bool highRuleCountDomain = false;
 
                 // Loop through all of the attributes on the class until we find the [LOGQ.Fact] attribute
                 foreach (AttributeData attributeData in classSymbol.GetAttributes())
                 {
-                    // if it's NoHashing Attribute - change flag
+                    if (highRuleCountDomainAttribute.Equals(attributeData.AttributeClass, SymbolEqualityComparer.Default))
+                    {
+                        highRuleCountDomain = true;
+                    }
 
                     if (noIndexingAttribute.Equals(attributeData.AttributeClass, SymbolEqualityComparer.Default))
                     {
@@ -291,8 +299,6 @@ namespace LOGQ_Source_Generation
                             }
                         }
                     }
-
-                    break;
                 }
 
                 // Get all the members in the class
@@ -348,7 +354,7 @@ namespace LOGQ_Source_Generation
                 string classNamespace = GetNamespace(classDeclarationSyntax);
                 // Create a GenerationData for use in the generation phase
                 classesToGenerate.Add(new GenerationData(classSymbol.ToDisplayString(), 
-                    className, classNamespace, properties, canBeIndexed, GetConstraints(classDeclarationSyntax)));
+                    className, classNamespace, properties, canBeIndexed, highRuleCountDomain, GetConstraints(classDeclarationSyntax)));
             }
 
             return classesToGenerate;
