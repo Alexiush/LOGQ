@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using static LOGQ.DelegateTransformer;
 
 namespace LOGQ.Extensions
 {
@@ -17,6 +18,42 @@ namespace LOGQ.Extensions
             return new LogicalAction(actionsToTry
                 .Select<Predicate<List<IBound>>, Predicate<List<IBound>>>
                 (predicate => context => !predicate(context)).ToList());
+        }
+
+        /// <summary>
+        /// Negates logical action created from list of predicates without copy storage
+        /// </summary>
+        /// <param name="actionsToTry">List of available actions</param>
+        /// <returns>Negated logical action (returns true only if all actions return false)</returns>
+        public static LogicalAction Not(ICollection<Func<bool>> actionsToTry)
+        {
+            return new LogicalAction(actionsToTry
+                .Select<Func<bool>, Predicate<List<IBound>>>
+                (predicate => context => !predicate.ToPredicate()(context)).ToList());
+        }
+
+        /// <summary>
+        /// Negates logical action created from list of actions
+        /// </summary>
+        /// <param name="actionsToTry">List of available actions</param>
+        /// <returns>Negated logical action (returns true only if all actions return false)</returns>
+        public static LogicalAction Not(ICollection<Action<List<IBound>>> actionsToTry)
+        {
+            return new LogicalAction(actionsToTry
+                .Select<Action<List<IBound>>, Predicate<List<IBound>>>
+                (predicate => context => !predicate.ToPredicate()(context)).ToList());
+        }
+
+        /// <summary>
+        /// Negates logical action created from list of actions without copy storage
+        /// </summary>
+        /// <param name="actionsToTry">List of available actions</param>
+        /// <returns>Negated logical action (returns true only if all actions return false)</returns>
+        public static LogicalAction Not(ICollection<Action> actionsToTry)
+        {
+            return new LogicalAction(actionsToTry
+                .Select<Action, Predicate<List<IBound>>>
+                (predicate => context => !predicate.ToPredicate()(context)).ToList());
         }
 
         /// <summary>
