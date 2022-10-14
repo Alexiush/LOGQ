@@ -179,9 +179,22 @@ namespace LOGQ
         public abstract Type PatternType();
     }
 
+    /// <summary>
+    /// Interface for rule patterns that need specific approach for clustering
+    /// </summary>
+    /// <typeparam name="T">type</typeparam>
     public interface ISpecificallyStorable<T> 
     {
+        /// <summary>
+        /// Function used to get clusters to add/retract rule templates
+        /// </summary>
+        /// <returns>filtering function</returns>
         public Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter();
+
+        /// <summary>
+        /// Function used to get clusters to query on rule templates
+        /// </summary>
+        /// <returns>filtering function</returns>
         public Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter();
     }
 

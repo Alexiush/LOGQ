@@ -33,7 +33,7 @@ namespace LOGQ
         }
 
         public List<T> GetValues()
-            => objects.ToList();
+            => objects;
     }
 
     /// <summary>
@@ -72,6 +72,10 @@ namespace LOGQ
         public List<IFact> FilteredBySample(BoundFact sample);
     }
 
+    /// <summary>
+    /// Special data structure for fast rule check based on add/get filters specified in pattern implementation
+    /// </summary>
+    /// <typeparam name="T">type</typeparam>
     public class RulesDictionary<T>
     {
         public class PatternBasedIndexedCollection<T>

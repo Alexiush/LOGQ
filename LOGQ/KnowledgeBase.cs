@@ -97,32 +97,6 @@ namespace LOGQ
         }
     }
 
-    /*
-    /// <summary>
-    /// Class used to store rules in knowledge base.
-    /// Has a head - rule pattern to be matched and body - actions performed on matched bound rule
-    /// </summary>
-    public sealed class RuleWithBody
-    {
-        public Rule Head { get; private set; }
-        public Func<BoundRule, LogicalQuery> Body { get; private set; }
-
-        /// <summary>
-        /// Constructs rule with body from the head and body
-        /// </summary>
-        /// <param name="head">Rule pattern to be matched</param>
-        /// <param name="body">
-        /// Function that recieves bound rule and returns logical query 
-        /// that consists of actions to be performed with matched bound rule
-        /// </param>
-        public RuleWithBody(Rule head, Func<BoundRule, LogicalQuery> body)
-        {
-            this.Head = head;
-            this.Body = body;
-        }
-    }
-    */
-
     /// <summary>
     /// Class that groups facts and rules.
     /// Knowledge base can be searched for specific facts and rules.
@@ -250,6 +224,10 @@ namespace LOGQ
             _facts[factType].Add(fact);
         }
 
+        /// <summary>
+        /// Removes fact from the knowledge base
+        /// </summary>
+        /// <param name="fact">Fact to be removed</param>
         public void RetractFact(Fact fact)
         {
             Type factType = fact.FactType();
@@ -259,6 +237,7 @@ namespace LOGQ
         /// <summary>
         /// Puts rule into the knowledge base
         /// </summary>
+        /// <typeparam name="T">Rule type</typeparam>
         /// <param name="rule">Rule to be put</param>
         public void DeclareRule<T>(RuleWithBody<T> rule) where T : BoundRule
         {
@@ -272,6 +251,11 @@ namespace LOGQ
             _rules[ruleType].Add(rule);
         }
 
+        /// <summary>
+        /// Removes the rule from the knowledge base
+        /// </summary>
+        /// <typeparam name="T">Rule type</typeparam>
+        /// <param name="rule">Rule to be removed</param>
         public void RetractRule<T>(RuleWithBody<T> rule) where T : BoundRule
         {
             Type ruleType = rule.Head.RuleType();
