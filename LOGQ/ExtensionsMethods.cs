@@ -15,9 +15,7 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         public static LogicalAction Not(ICollection<Predicate<List<IBound>>> actionsToTry)
         {
-            return new LogicalAction(actionsToTry
-                .Select<Predicate<List<IBound>>, Predicate<List<IBound>>>
-                (predicate => context => !predicate(context)).ToList());
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
         }
 
         /// <summary>
@@ -27,9 +25,7 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         public static LogicalAction Not(ICollection<Func<bool>> actionsToTry)
         {
-            return new LogicalAction(actionsToTry
-                .Select<Func<bool>, Predicate<List<IBound>>>
-                (predicate => context => !predicate.ToPredicate()(context)).ToList());
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
         }
 
         /// <summary>
@@ -39,9 +35,7 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         public static LogicalAction Not(ICollection<Action<List<IBound>>> actionsToTry)
         {
-            return new LogicalAction(actionsToTry
-                .Select<Action<List<IBound>>, Predicate<List<IBound>>>
-                (predicate => context => !predicate.ToPredicate()(context)).ToList());
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
         }
 
         /// <summary>
@@ -51,9 +45,7 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         public static LogicalAction Not(ICollection<Action> actionsToTry)
         {
-            return new LogicalAction(actionsToTry
-                .Select<Action, Predicate<List<IBound>>>
-                (predicate => context => !predicate.ToPredicate()(context)).ToList());
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
         }
 
         /// <summary>
@@ -72,7 +64,7 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogicalAction Not(Func<bool> actionToTry)
-            => Not(copyStorage => actionToTry());
+            => Not(actionToTry.ToPredicate());
 
         /// <summary>
         /// Negates logical action created from action that uses copy storage
@@ -81,7 +73,7 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogicalAction Not(Action<List<IBound>> actionToTry)
-            => Not(new List<Predicate<List<IBound>>> { copyStorage => { actionToTry(copyStorage); return true; } });
+            => Not(actionToTry.ToPredicate());
 
         /// <summary>
         /// Negates logical action created from action
@@ -90,7 +82,7 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogicalAction Not(Action actionToTry)
-            => Not(new List<Predicate<List<IBound>>> { copyStorage => { actionToTry(); return true; } });
+            => Not(actionToTry.ToPredicate());
 
         /// <summary>
         /// Negates logical action created from backtrack iterator

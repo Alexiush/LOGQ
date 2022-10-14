@@ -658,7 +658,7 @@ namespace LOGQ
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery With(Func<bool> actionInitializer)
         {
-            return AddNode(copyStorage => actionInitializer(), true);
+            return AddNode(actionInitializer, true);
         }
 
         /// <summary>
@@ -792,7 +792,7 @@ namespace LOGQ
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery OrWith(Func<bool> actionInitializer)
         {
-            return AddNode(copyStorage => actionInitializer(), false);
+            return AddNode(actionInitializer, false);
         }
 
         /// <summary>
