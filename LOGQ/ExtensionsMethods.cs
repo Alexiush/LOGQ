@@ -112,7 +112,7 @@ namespace LOGQ.Extensions
                 {
                     if (!hasConsulted)
                     {
-                        factsIterator = new BacktrackIterator(knowledgeBase.CheckForFacts(fact));
+                        factsIterator = knowledgeBase.CheckForFacts(fact);
                         hasConsulted = true;
                     }
 

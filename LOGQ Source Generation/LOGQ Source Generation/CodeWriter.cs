@@ -473,6 +473,10 @@ namespace LOGQ_Source_Generation
             .Append($"HashSet<{className}> factSet = new HashSet<{className}>();")
             .Append(@"
         
+        ")
+            .Append($"long version = 0;")
+            .Append(@"
+        
         ");
 
             // Dictionary<int, Cluster<IFact>> for each property
@@ -486,6 +490,7 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Add(LOGQ.Fact fact)
         {
+            version++;
             ")
                 .Append($"{className} factCasted = ({className})fact;")
                 .Append(@"
@@ -519,6 +524,7 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Retract(LOGQ.Fact fact)
         {
+            version++;
             ")
              .Append($"{className} factCasted = ({className})fact;")
                 .Append(@"
@@ -613,6 +619,14 @@ namespace LOGQ_Source_Generation
         }
         ");
 
+            // Get version
+            sb.Append(@"
+        public long GetVersion()
+        {
+            return version;
+        }
+        ");
+
             // End
             sb.Append(@"
     }
@@ -634,12 +648,17 @@ namespace LOGQ_Source_Generation
             // List of (Name)
             sb.AppendLine(@"
         List<LOGQ.Fact> facts = new List<LOGQ.Fact>();       
+    ")
+            .Append($"long version = 0;")
+            .Append(@"
+        
     ");
 
             // Add overload
             sb.Append(@"
         public void Add(LOGQ.Fact fact)
         {
+            version++;
             ")
                 .Append("facts.Add(fact);").Append(@"
         }
@@ -650,6 +669,7 @@ namespace LOGQ_Source_Generation
            sb.Append(@"
         public void Retract(LOGQ.Fact fact)
         {
+            version++;
             ")
                 .Append("facts.Remove(fact);").Append(@"
         }
@@ -662,6 +682,14 @@ namespace LOGQ_Source_Generation
             ")
                 .Append("return facts.Where(fact => fact.Equals(sample)).ToList();").Append(@"
         }");
+
+            // Get version
+            sb.Append(@"
+        public long GetVersion()
+        {
+            return version;
+        }
+        ");
 
             // End
             sb.Append(@"
@@ -690,11 +718,17 @@ namespace LOGQ_Source_Generation
                 ");
             }
 
+            sb.Append($"long version = 0;")
+            .Append(@"
+        
+    ");
+
 
             // Add overload
             sb.Append(@"
         public void Add(LOGQ.RuleTemplate rule)
         {
+            version++;
             ").Append($"var ruleCasted = (RuleWithBody<{"Bound" + className}>)rule;" + @"
             ");
             
@@ -714,6 +748,7 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Retract(LOGQ.RuleTemplate rule)
         {
+            version++;
             ").Append($"var ruleCasted = (RuleWithBody<{"Bound" + className}>)rule;" + @"
             ");
 
@@ -760,6 +795,14 @@ namespace LOGQ_Source_Generation
         
         ");
 
+            // Get version
+            sb.Append(@"
+        public long GetVersion()
+        {
+            return version;
+        }
+        ");
+
             // End
             sb.Append(@"
     }
@@ -781,12 +824,17 @@ namespace LOGQ_Source_Generation
             // List of (Name)
             sb.AppendLine(@"
         List<LOGQ.RuleTemplate> rules = new List<LOGQ.RuleTemplate>();       
+    ")
+            .Append($"long version = 0;")
+            .Append(@"
+        
     ");
 
             // Add overload
             sb.Append(@"
         public void Add(LOGQ.RuleTemplate rule)
         {
+            version++;
             ")
                 .Append("rules.Add(rule);").Append(@"
         }
@@ -797,6 +845,7 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Retract(LOGQ.RuleTemplate rule)
         {
+            version++;
             ")
                 .Append("rules.Remove(rule);").Append(@"
         }
@@ -809,6 +858,14 @@ namespace LOGQ_Source_Generation
             ")
                 .Append("return rules.Where(rule => rule.Head.Equals(pattern)).ToList();").Append(@"
         }");
+
+            // Get version
+            sb.Append(@"
+        public long GetVersion()
+        {
+            return version;
+        }
+        ");
 
             // End
             sb.Append(@"

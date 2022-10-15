@@ -13,15 +13,18 @@ namespace LOGQ
     /// <typeparam name="T">Type</typeparam>
     internal class IndexedFactsStorage<T> : IIndexedFactsStorage
     {
-        HashSet<IFact> facts;
+        private HashSet<IFact> facts;
+        private long version = 0;
 
         public void Add(Fact fact)
         {
+            version++;
             facts.Add(fact);
         }
 
         public void Retract(Fact fact)
         {
+            version++;
             facts.Remove(fact);
         }
 
@@ -35,6 +38,11 @@ namespace LOGQ
 
             return new List<IFact>();
         }
+
+        public long GetVersion()
+        {
+            return version;
+        }
     }
 
     /// <summary>
@@ -42,16 +50,21 @@ namespace LOGQ
     /// </summary>
     internal class IndexedRulesStorage<T> : IIndexedRulesStorage
     {
-        RulesDictionary<T> rulesClustered = new RulesDictionary<T>();
+        private RulesDictionary<T> rulesClustered = new RulesDictionary<T>();
+        private long version = 0;
 
         public void Add(RuleTemplate rule)
         {
+            version++;
+
             var ruleCasted = (RuleWithBody<BoundRuleAlias<T>>)rule;
             rulesClustered.Add(((RuleAlias<T>)ruleCasted.Head).Value, rule);
         }
 
         public void Retract(RuleTemplate rule)
         {
+            version++;
+
             var ruleCasted = (RuleWithBody<BoundRuleAlias<T>>)rule;
             rulesClustered.Retract(((RuleAlias<T>)ruleCasted.Head).Value, rule);
         }
@@ -64,6 +77,11 @@ namespace LOGQ
                 .GetValues()
                 .Where(rule => rule.Head.Equals(pattern))
                 .ToList();
+        }
+
+        public long GetVersion()
+        {
+            return version;
         }
     }
 

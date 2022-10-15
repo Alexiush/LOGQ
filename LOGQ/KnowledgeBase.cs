@@ -106,6 +106,7 @@ namespace LOGQ
         private Dictionary<Type, IIndexedFactsStorage> _facts = new Dictionary<Type, IIndexedFactsStorage>();
         private Dictionary<Type, IIndexedRulesStorage> _rules = new Dictionary<Type, IIndexedRulesStorage>();
 
+        /*
         /// <summary>
         /// Returns predicates for fact-checking in this knowledge base
         /// </summary>
@@ -140,6 +141,73 @@ namespace LOGQ
 
             return factCheckPredicates;
         }
+        */
+
+        /// <summary>
+        /// Returns backtrack iterator for fact-checking in this knowledge base
+        /// </summary>
+        /// <param name="sampleFact">Bound fact that must match facts</param>
+        /// <returns>List of predicates that check each fact of the same underlying type</returns>
+        /// <exception cref="ArgumentException">
+        /// When there is no facts of that type in a knowledge base
+        /// </exception>
+        internal BacktrackIterator CheckForFacts(BoundFact sampleFact)
+        {
+            Type factType = sampleFact.FactType();
+
+            if (_facts.ContainsKey(factType))
+            {
+                bool enumeratorIsUpToDate = false;
+
+                long version = _facts[factType].GetVersion();
+                List<IFact> rulesFiltered = _facts[factType].FilteredBySample(sampleFact);
+                var enumerator = rulesFiltered.GetEnumerator();
+
+                return new BacktrackIterator
+                (
+                    () => {
+                        while (true)
+                        {
+                            if (!enumeratorIsUpToDate)
+                            {
+                                var currentVersion = _facts[factType].GetVersion();
+                                if (version != currentVersion)
+                                {
+                                    rulesFiltered = _facts[factType].FilteredBySample(sampleFact);
+                                    version = currentVersion;
+                                }
+
+                                enumerator = rulesFiltered.GetEnumerator();
+                                enumeratorIsUpToDate = true;
+                            }
+
+                            if (!enumerator.MoveNext())
+                            {
+                                return null;
+                            }
+
+                            bool result = sampleFact.Equals(enumerator.Current);
+
+                            if (!result)
+                            {
+                                continue;
+                            }
+
+                            return copyStorage =>
+                            {
+                                sampleFact.Bind((Fact)enumerator.Current, copyStorage);
+                                return result;
+                            };
+                        }
+                    },
+                    () => { enumeratorIsUpToDate = false; }
+                );
+            }
+            else
+            {
+                throw new ArgumentException("No rules of that type");
+            }
+        }
 
         /// <summary>
         /// Returns backtrack iterator for rule-checking in this knowledge base
@@ -155,9 +223,11 @@ namespace LOGQ
 
             if (_rules.ContainsKey(ruleType))
             {
-                List<RuleTemplate> rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
                 LogicalQuery innerQuery = null;
                 bool enumeratorIsUpToDate = false;
+
+                long version = _rules[ruleType].GetVersion();
+                List<RuleTemplate> rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
                 var enumerator = rulesFiltered.GetEnumerator();
 
                 return new BacktrackIterator
@@ -167,7 +237,13 @@ namespace LOGQ
                         {
                             if (!enumeratorIsUpToDate)
                             {
-                                rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
+                                var currentVersion = _rules[ruleType].GetVersion();
+                                if (version != currentVersion)
+                                {
+                                    rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
+                                    version = currentVersion;
+                                }
+
                                 enumerator = rulesFiltered.GetEnumerator();
                                 enumeratorIsUpToDate = true;
                             }

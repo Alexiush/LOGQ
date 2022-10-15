@@ -70,6 +70,8 @@ namespace LOGQ
         public void Retract(Fact fact);
 
         public List<IFact> FilteredBySample(BoundFact sample);
+
+        public long GetVersion();
     }
 
     /// <summary>
@@ -183,5 +185,7 @@ namespace LOGQ
         public void Retract(RuleTemplate rule);
 
         public List<RuleTemplate> FilteredByPattern(BoundRule pattern);
+
+        public long GetVersion();
     }
 }
