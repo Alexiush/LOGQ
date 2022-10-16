@@ -37,10 +37,14 @@
   <PropertyGroup>
 	<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
 	<PackageIcon>LogqIcon.png</PackageIcon>
-	<PackageReleaseNotes>- Multiple behaviour fixes
-- New fast collections for fact-checking
-- Generic Facts and Rules</PackageReleaseNotes>
-	<Version>2.0.0</Version>
+	<PackageReleaseNotes>- Retract method to delete facts and rules from knowledge base
+- Generic RuleWithBody that no more requires downcasting bound rule
+- Fast rule-checks
+- Collections of supported delegates supported too
+- Records and structs support
+- Generic types mapping
+- Explicitly adding fact/rule storages</PackageReleaseNotes>
+	<Version>2.1.0</Version>
   </PropertyGroup>
 	
   <ItemGroup>
