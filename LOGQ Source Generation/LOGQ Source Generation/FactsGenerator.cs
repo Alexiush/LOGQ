@@ -112,6 +112,11 @@ namespace LOGQ_Source_Generation
             }
         }
 
+        /// <summary>
+        /// Recursively gets all constraints on type and it's parents
+        /// </summary>
+        /// <param name="typeSyntax">Type syntax</param>
+        /// <returns>List of constraints</returns>
         private static List<string> GetConstraints(BaseTypeDeclarationSyntax typeSyntax)
         {
             List<string> constraints = new List<string>();

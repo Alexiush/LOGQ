@@ -27,7 +27,7 @@ namespace LOGQ
 
         internal LogicalAction(ICollection<Predicate<List<IBound>>> actionInitializer)
         {
-            _iterator = new BacktrackIterator(actionInitializer); 
+            _iterator = new BacktrackIterator(actionInitializer);
         }
 
         internal LogicalAction(ICollection<Func<bool>> actionInitializer)

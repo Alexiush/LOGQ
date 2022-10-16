@@ -147,9 +147,14 @@ namespace LOGQ
             return typeof(T);
         }
 
-        public override IIndexedFactsStorage IndexedFactsStorage()
+        public static new IIndexedFactsStorage Storage()
         {
             return new IndexedFactsStorage<T>();
+        }
+
+        public override IIndexedFactsStorage IndexedFactsStorage()
+        {
+            return Storage();
         }
     }
 
@@ -273,9 +278,14 @@ namespace LOGQ
             return typeof(T);
         }
 
-        public override IIndexedRulesStorage IndexedRulesStorage()
+        public static new IIndexedRulesStorage Storage()
         {
             return new IndexedRulesStorage<T>();
+        }
+
+        public override IIndexedRulesStorage IndexedRulesStorage()
+        {
+            return Storage();
         }
     }
 

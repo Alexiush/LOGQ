@@ -14,8 +14,10 @@ namespace LOGQ
         abstract public Type FactType();
     }
 
-    public interface IStorageableFact
+    public abstract class StorageableFact
     {
+        public static IIndexedFactsStorage Storage() => throw new InvalidOperationException("Can't call storage on base type");
+
         /// <summary>
         /// Returns IndexedFactsCollection generated specifically for this type
         /// </summary>
@@ -26,10 +28,10 @@ namespace LOGQ
     /// <summary>
     /// Abstract class that marks facts
     /// </summary>
-    public abstract class Fact: IFact, IStorageableFact
+    public abstract class Fact: StorageableFact, IFact
     {
         abstract public Type FactType();
-        abstract public IIndexedFactsStorage IndexedFactsStorage();
+        abstract public override IIndexedFactsStorage IndexedFactsStorage();
     }
 
     /// <summary>
@@ -56,8 +58,10 @@ namespace LOGQ
         abstract public Type RuleType();
     }
 
-    public interface IStorageableRule
+    public abstract class StorageableRule
     {
+        public static IIndexedRulesStorage Storage() => throw new InvalidOperationException("Can't call storage on base type");
+
         /// <summary>
         /// Returns IndexedRulesCollection generated specifically for this type
         /// </summary>
@@ -68,10 +72,10 @@ namespace LOGQ
     /// <summary>
     /// Abstract class that marks rules
     /// </summary>
-    public abstract class Rule: IRule, IStorageableRule
+    public abstract class Rule: StorageableRule, IRule
     {
         abstract public Type RuleType();
-        abstract public IIndexedRulesStorage IndexedRulesStorage();
+        abstract public override IIndexedRulesStorage IndexedRulesStorage();
     }
 
     /// <summary>
@@ -106,43 +110,6 @@ namespace LOGQ
         private Dictionary<Type, IIndexedFactsStorage> _facts = new Dictionary<Type, IIndexedFactsStorage>();
         private Dictionary<Type, IIndexedRulesStorage> _rules = new Dictionary<Type, IIndexedRulesStorage>();
 
-        /*
-        /// <summary>
-        /// Returns predicates for fact-checking in this knowledge base
-        /// </summary>
-        /// <param name="sampleFact">Bound fact that must match facts</param>
-        /// <returns>List of predicates that check each fact of the same underlying type</returns>
-        /// <exception cref="ArgumentException">
-        /// When there is no facts of that type in a knowledge base
-        /// </exception>
-        internal List<Predicate<List<IBound>>> CheckForFacts(BoundFact sampleFact)
-        {
-            List<Predicate<List<IBound>>> factCheckPredicates =
-                new List<Predicate<List<IBound>>>();
-
-            Type factType = sampleFact.FactType();
-
-            if (_facts.ContainsKey(factType))
-            {
-                foreach (Fact fact in _facts[factType].FilteredBySample(sampleFact))
-                {
-                    factCheckPredicates.Add(copyStorage =>
-                    {
-                        bool comparisonResult = sampleFact.Equals(fact);
-                        sampleFact.Bind(fact, copyStorage);
-                        return comparisonResult;
-                    });
-                }
-            }
-            else
-            {
-                throw new ArgumentException("No facts of that type");
-            }
-
-            return factCheckPredicates;
-        }
-        */
-
         /// <summary>
         /// Returns backtrack iterator for fact-checking in this knowledge base
         /// </summary>
@@ -155,58 +122,56 @@ namespace LOGQ
         {
             Type factType = sampleFact.FactType();
 
-            if (_facts.ContainsKey(factType))
+            if (!_facts.ContainsKey(factType))
             {
-                bool enumeratorIsUpToDate = false;
+                throw new ArgumentException("No facts of that type");
+            }
 
-                long version = _facts[factType].GetVersion();
-                List<IFact> rulesFiltered = _facts[factType].FilteredBySample(sampleFact);
-                var enumerator = rulesFiltered.GetEnumerator();
+            bool enumeratorIsUpToDate = false;
 
-                return new BacktrackIterator
-                (
-                    () => {
-                        while (true)
+            long version = _facts[factType].GetVersion();
+            List<IFact> rulesFiltered = _facts[factType].FilteredBySample(sampleFact);
+            var enumerator = rulesFiltered.GetEnumerator();
+
+            return new BacktrackIterator
+            (
+                () => {
+                    while (true)
+                    {
+                        if (!enumeratorIsUpToDate)
                         {
-                            if (!enumeratorIsUpToDate)
+                            var currentVersion = _facts[factType].GetVersion();
+                            if (version != currentVersion)
                             {
-                                var currentVersion = _facts[factType].GetVersion();
-                                if (version != currentVersion)
-                                {
-                                    rulesFiltered = _facts[factType].FilteredBySample(sampleFact);
-                                    version = currentVersion;
-                                }
-
-                                enumerator = rulesFiltered.GetEnumerator();
-                                enumeratorIsUpToDate = true;
+                                rulesFiltered = _facts[factType].FilteredBySample(sampleFact);
+                                version = currentVersion;
                             }
 
-                            if (!enumerator.MoveNext())
-                            {
-                                return null;
-                            }
-
-                            bool result = sampleFact.Equals(enumerator.Current);
-
-                            if (!result)
-                            {
-                                continue;
-                            }
-
-                            return copyStorage =>
-                            {
-                                sampleFact.Bind((Fact)enumerator.Current, copyStorage);
-                                return result;
-                            };
+                            enumerator = rulesFiltered.GetEnumerator();
+                            enumeratorIsUpToDate = true;
                         }
-                    },
-                    () => { enumeratorIsUpToDate = false; }
-                );
-            }
-            else
-            {
-                throw new ArgumentException("No rules of that type");
-            }
+
+                        if (!enumerator.MoveNext())
+                        {
+                            return null;
+                        }
+
+                        bool result = sampleFact.Equals(enumerator.Current);
+
+                        if (!result)
+                        {
+                            continue;
+                        }
+
+                        return copyStorage =>
+                        {
+                            sampleFact.Bind((Fact)enumerator.Current, copyStorage);
+                            return result;
+                        };
+                    }
+                },
+                () => { enumeratorIsUpToDate = false; }
+            );
         }
 
         /// <summary>
@@ -221,67 +186,65 @@ namespace LOGQ
         {
             Type ruleType = ruleHead.RuleType();
 
-            if (_rules.ContainsKey(ruleType))
-            {
-                LogicalQuery innerQuery = null;
-                bool enumeratorIsUpToDate = false;
-
-                long version = _rules[ruleType].GetVersion();
-                List<RuleTemplate> rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
-                var enumerator = rulesFiltered.GetEnumerator();
-
-                return new BacktrackIterator
-                (
-                    () => {
-                        while (true)
-                        {
-                            if (!enumeratorIsUpToDate)
-                            {
-                                var currentVersion = _rules[ruleType].GetVersion();
-                                if (version != currentVersion)
-                                {
-                                    rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
-                                    version = currentVersion;
-                                }
-
-                                enumerator = rulesFiltered.GetEnumerator();
-                                enumeratorIsUpToDate = true;
-                            }
-
-                            if (innerQuery is not null)
-                            {
-                                innerQuery.Reset();
-                            }
-
-                            if (!enumerator.MoveNext())
-                            {
-                                return null;
-                            }
-
-                            if (innerQuery is null)
-                            {
-                                innerQuery = enumerator.Current.Body(ruleHead);
-                            }
-
-                            bool result = innerQuery.Execute();
-
-                            if (!result)
-                            {
-                                innerQuery.Reset();
-                                innerQuery = null;
-                                continue;
-                            }
-
-                            return copyStorage => result;
-                        }
-                    },
-                    () => { enumeratorIsUpToDate = false; }
-                );
-            }
-            else
+            if (!_rules.ContainsKey(ruleType))
             {
                 throw new ArgumentException("No rules of that type");
             }
+
+            LogicalQuery innerQuery = null;
+            bool enumeratorIsUpToDate = false;
+
+            long version = _rules[ruleType].GetVersion();
+            List<RuleTemplate> rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
+            var enumerator = rulesFiltered.GetEnumerator();
+
+            return new BacktrackIterator
+            (
+                () => {
+                    while (true)
+                    {
+                        if (!enumeratorIsUpToDate)
+                        {
+                            var currentVersion = _rules[ruleType].GetVersion();
+                            if (version != currentVersion)
+                            {
+                                rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
+                                version = currentVersion;
+                            }
+
+                            enumerator = rulesFiltered.GetEnumerator();
+                            enumeratorIsUpToDate = true;
+                        }
+
+                        if (innerQuery is not null)
+                        {
+                            innerQuery.Reset();
+                        }
+
+                        if (!enumerator.MoveNext())
+                        {
+                            return null;
+                        }
+
+                        if (innerQuery is null)
+                        {
+                            innerQuery = enumerator.Current.Body(ruleHead);
+                        }
+
+                        bool result = innerQuery.Execute();
+
+                        if (!result)
+                        {
+                            innerQuery.Reset();
+                            innerQuery = null;
+                            continue;
+                        }
+
+                        return copyStorage => result;
+                    }
+                },
+                () => { enumeratorIsUpToDate = false; }
+            );
         }
 
         /// <summary>
@@ -336,6 +299,26 @@ namespace LOGQ
         {
             Type ruleType = rule.Head.RuleType();
             _rules[ruleType].Retract(rule);
+        }
+
+        /// <summary>
+        /// Adds empty storage for the facts
+        /// </summary>
+        /// <param name="type">Fact type</param>
+        /// <param name="storage">Storage of that type</param>
+        public void AddFactStorage(Type type, IIndexedFactsStorage storage)
+        { 
+            _facts.Add(type, storage);
+        }
+
+        /// <summary>
+        /// Adds empty storage for rules
+        /// </summary>
+        /// <param name="type">Rules type</param>
+        /// <param name="storage">Storage of that type</param>
+        public void AddRuleStorage(Type type, IIndexedRulesStorage storage)
+        {
+            _rules.Add(type, storage);
         }
     }
 }

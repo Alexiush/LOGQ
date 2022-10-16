@@ -233,9 +233,17 @@ namespace LOGQ_Source_Generation
             var sb = new StringBuilder();
 
             sb.Append(@"
+        public static new " + storageInterface + " Storage" + @"()
+        {
+            return ").Append($"new {storageType}{GenericAnnotation(data)} (); ").Append(@"
+        }
+
+");
+
+            sb.Append(@"
         public override " + storageInterface + " " + getterName + @"()
         {
-            return ").Append($"new {storageType}{GenericAnnotation(data)}();").Append(@"
+            return Storage();
         }
 ");
 
