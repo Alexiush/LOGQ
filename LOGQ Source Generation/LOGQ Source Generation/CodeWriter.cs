@@ -655,7 +655,7 @@ namespace LOGQ_Source_Generation
 
             // List of (Name)
             sb.AppendLine(@"
-        List<LOGQ.Fact> facts = new List<LOGQ.Fact>();       
+        List<LOGQ.IFact> facts = new List<LOGQ.IFact>();       
     ")
             .Append($"long version = 0;")
             .Append(@"
@@ -685,7 +685,7 @@ namespace LOGQ_Source_Generation
         ");
 
             // Get overload 
-            sb.Append(@"public List<LOGQ.Fact> FilteredBySample(LOGQ.BoundFact sample)
+            sb.Append(@"public List<LOGQ.IFact> FilteredBySample(LOGQ.BoundFact sample)
         {
             ")
                 .Append("return facts.Where(fact => fact.Equals(sample)).ToList();").Append(@"
