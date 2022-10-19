@@ -130,8 +130,8 @@ namespace LOGQ
             bool enumeratorIsUpToDate = false;
 
             long version = _facts[factType].GetVersion();
-            List<IFact> rulesFiltered = _facts[factType].FilteredBySample(sampleFact);
-            var enumerator = rulesFiltered.GetEnumerator();
+            List<IFact> factsFiltered = _facts[factType].FilteredBySample(sampleFact);
+            var enumerator = factsFiltered.GetEnumerator();
 
             return new BacktrackIterator
             (
@@ -143,11 +143,11 @@ namespace LOGQ
                             var currentVersion = _facts[factType].GetVersion();
                             if (version != currentVersion)
                             {
-                                rulesFiltered = _facts[factType].FilteredBySample(sampleFact);
+                                factsFiltered = _facts[factType].FilteredBySample(sampleFact);
                                 version = currentVersion;
                             }
 
-                            enumerator = rulesFiltered.GetEnumerator();
+                            enumerator = factsFiltered.GetEnumerator();
                             enumeratorIsUpToDate = true;
                         }
 

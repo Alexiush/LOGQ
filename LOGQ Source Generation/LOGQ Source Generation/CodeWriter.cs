@@ -612,7 +612,7 @@ namespace LOGQ_Source_Generation
 
             if (clusters.Count == 0)
             {
-                return facts.Where(fact => fact.Equals(sample)).ToList();
+                return facts.Where(fact => sample.Equals(fact)).ToList();
             }
             
             ")
@@ -688,7 +688,7 @@ namespace LOGQ_Source_Generation
             sb.Append(@"public List<LOGQ.IFact> FilteredBySample(LOGQ.BoundFact sample)
         {
             ")
-                .Append("return facts.Where(fact => fact.Equals(sample)).ToList();").Append(@"
+                .Append("return facts.Where(fact => sample.Equals(fact)).ToList();").Append(@"
         }");
 
             // Get version
