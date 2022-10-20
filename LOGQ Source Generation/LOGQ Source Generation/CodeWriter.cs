@@ -191,7 +191,7 @@ namespace LOGQ_Source_Generation
                 // Get each property hashcode and create a hashcode out of it
             foreach (var property in properties)
             {
-                sb.AppendLine($"{property.PropertyName}.GetHashCode(),");
+                sb.AppendLine($"{property.PropertyName}.Value.GetHashCode(),");
             }
 
             sb.Append(@"
@@ -498,15 +498,16 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Add(LOGQ.Fact fact)
         {
-            version++;
             ")
                 .Append($"{className} factCasted = ({className})fact;")
                 .Append(@"
+            if (!factSet.Add(factCasted))
+            {
+                return;
+            }
 
             facts.Add(factCasted);")
                 .Append(@"
-            factSet.Add(factCasted);
-            
             ");
             
             foreach(Property property in hashableProperties)
@@ -525,6 +526,7 @@ namespace LOGQ_Source_Generation
             }
 
             sb.Append(@"
+            version++;
         }
 ");
 
@@ -532,15 +534,17 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Retract(LOGQ.Fact fact)
         {
-            version++;
             ")
              .Append($"{className} factCasted = ({className})fact;")
                 .Append(@"
 
+            if (!factSet.Remove(factCasted))
+            {
+                return;
+            }
+
             facts.Remove(factCasted);")
                 .Append(@"
-            factSet.Remove(factCasted);
-            
             ");
 
             foreach (Property property in hashableProperties)
@@ -554,6 +558,7 @@ namespace LOGQ_Source_Generation
             }
 
             sb.Append(@"
+            version++;
         }
 ");
 
@@ -656,9 +661,8 @@ namespace LOGQ_Source_Generation
             // List of (Name)
             sb.AppendLine(@"
         List<LOGQ.IFact> facts = new List<LOGQ.IFact>();       
-    ")
-            .Append($"long version = 0;")
-            .Append(@"
+        HashSet<LOGQ.IFact> factSet = new HashSet<LOGQ.IFact>();
+        long version = 0;
         
     ");
 
@@ -666,9 +670,13 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Add(LOGQ.Fact fact)
         {
+            if (!factSet.Add(fact))
+            {
+                return;
+            }
+
+            facts.Add(fact);
             version++;
-            ")
-                .Append("facts.Add(fact);").Append(@"
         }
         
         ");
@@ -677,9 +685,13 @@ namespace LOGQ_Source_Generation
            sb.Append(@"
         public void Retract(LOGQ.Fact fact)
         {
+            if (!factSet.Remove(fact))
+            {
+                return;
+            }
+            
+            facts.Remove(fact);
             version++;
-            ")
-                .Append("facts.Remove(fact);").Append(@"
         }
         
         ");
@@ -726,17 +738,20 @@ namespace LOGQ_Source_Generation
                 ");
             }
 
-            sb.Append($"long version = 0;")
-            .Append(@"
-        
+            sb.Append(@"
+        HashSet<RuleTemplate> rules = new HashSet<RuleTemplate>();
+        long version = 0;
     ");
 
 
             // Add overload
             sb.Append(@"
         public void Add(LOGQ.RuleTemplate rule)
-        {
-            version++;
+        {          
+            if (!rules.Add(rule))
+            {
+                return;
+            }
             ").Append($"var ruleCasted = (RuleWithBody<{"Bound" + className}>)rule;" + @"
             ");
             
@@ -748,6 +763,7 @@ namespace LOGQ_Source_Generation
             }
 
             sb.Append(@"
+            version++;
         }
         
         ");
@@ -756,7 +772,11 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Retract(LOGQ.RuleTemplate rule)
         {
-            version++;
+            if (!rules.Remove(rule))
+            {
+                return;
+            }
+
             ").Append($"var ruleCasted = (RuleWithBody<{"Bound" + className}>)rule;" + @"
             ");
 
@@ -768,6 +788,7 @@ namespace LOGQ_Source_Generation
             }
 
             sb.Append(@"
+            version++;        
         }
         
         ");
@@ -832,9 +853,8 @@ namespace LOGQ_Source_Generation
             // List of (Name)
             sb.AppendLine(@"
         List<LOGQ.RuleTemplate> rules = new List<LOGQ.RuleTemplate>();       
-    ")
-            .Append($"long version = 0;")
-            .Append(@"
+        HashSet<RuleTemplate> ruleSet = new HashSet<RuleTemplate>();
+        long version = 0;
         
     ");
 
@@ -842,9 +862,13 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Add(LOGQ.RuleTemplate rule)
         {
+            if (!ruleSet.Add(rule))
+            {
+                return;
+            }
+
+            rules.Add(rule);
             version++;
-            ")
-                .Append("rules.Add(rule);").Append(@"
         }
         
         ");
@@ -853,9 +877,13 @@ namespace LOGQ_Source_Generation
             sb.Append(@"
         public void Retract(LOGQ.RuleTemplate rule)
         {
+            if (!ruleSet.Remove(rule))
+            {
+                return;
+            }
+
+            rules.Remove(rule);
             version++;
-            ")
-                .Append("rules.Remove(rule);").Append(@"
         }
         
         ");

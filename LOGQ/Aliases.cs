@@ -18,14 +18,14 @@ namespace LOGQ
 
         public void Add(Fact fact)
         {
-            version++;
             facts.Add(fact);
+            version++;
         }
 
         public void Retract(Fact fact)
         {
-            version++;
             facts.Remove(fact);
+            version++;
         }
 
         public List<IFact> FilteredBySample(BoundFact sample)
@@ -51,22 +51,33 @@ namespace LOGQ
     internal class IndexedRulesStorage<T> : IIndexedRulesStorage
     {
         private RulesDictionary<T> rulesClustered = new RulesDictionary<T>();
+        private HashSet<RuleTemplate> rules = new HashSet<RuleTemplate>();
         private long version = 0;
 
         public void Add(RuleTemplate rule)
         {
-            version++;
+            if (rules.Contains(rule))
+            {
+                return;
+            }
 
             var ruleCasted = (RuleWithBody<BoundRuleAlias<T>>)rule;
             rulesClustered.Add(((RuleAlias<T>)ruleCasted.Head).Value, rule);
+
+            version++;
         }
 
         public void Retract(RuleTemplate rule)
         {
-            version++;
+            if (!rules.Remove(rule))
+            {
+                return;
+            }
 
             var ruleCasted = (RuleWithBody<BoundRuleAlias<T>>)rule;
             rulesClustered.Retract(((RuleAlias<T>)ruleCasted.Head).Value, rule);
+
+            version++;
         }
 
         public List<RuleTemplate> FilteredByPattern(BoundRule pattern)
