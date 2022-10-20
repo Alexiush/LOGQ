@@ -11,7 +11,7 @@ namespace LOGQ
     /// Generic implementation of FactsStorage
     /// </summary>
     /// <typeparam name="T">Type</typeparam>
-    internal class IndexedFactsStorage<T> : IIndexedFactsStorage
+    internal sealed class IndexedFactsStorage<T> : IIndexedFactsStorage
     {
         private HashSet<IFact> facts;
         private long version = 0;
@@ -48,7 +48,7 @@ namespace LOGQ
     /// <summary>
     /// General implementation of RulesStorage
     /// </summary>
-    internal class IndexedRulesStorage<T> : IIndexedRulesStorage
+    internal sealed class IndexedRulesStorage<T> : IIndexedRulesStorage
     {
         private RulesDictionary<T> rulesClustered = new RulesDictionary<T>();
         private HashSet<RuleTemplate> rules = new HashSet<RuleTemplate>();
@@ -100,7 +100,7 @@ namespace LOGQ
     /// Generic implementation of Fact
     /// </summary>
     /// <typeparam name="T">Type</typeparam>
-    public class FactAlias<T>: Fact
+    public sealed class FactAlias<T>: Fact
     {
         public Variable<T> Value;
 
@@ -173,7 +173,7 @@ namespace LOGQ
     /// Generic implementation of BoundFact
     /// </summary>
     /// <typeparam name="T">Type</typeparam>
-    public class BoundFactAlias<T>: BoundFact
+    public sealed class BoundFactAlias<T>: BoundFact
     {
         public BoundVariable<T> Value;
 
@@ -236,7 +236,7 @@ namespace LOGQ
     /// Generic implementation of Rule
     /// </summary>
     /// <typeparam name="T">Type</typeparam>
-    public class RuleAlias<T>: Rule
+    public sealed class RuleAlias<T>: Rule
     {
         public RuleVariable<T> Value;
 
@@ -304,7 +304,7 @@ namespace LOGQ
     /// Generic implementation of BoundRule
     /// </summary>
     /// <typeparam name="T">Type</typeparam>
-    public class BoundRuleAlias<T>: BoundRule
+    public sealed class BoundRuleAlias<T>: BoundRule
     {
         public BoundVariable<T> Value;
 

@@ -34,7 +34,7 @@ namespace LOGQ_Source_Generation
             StringBuilder sb = new StringBuilder();
 
             sb.Append(@"
-    public class ")
+    public sealed class ")
             .Append($"{className} : {inheritedClass}")
             .Append(@"
         ").Append(GenericConstraints(data)).Append(@"

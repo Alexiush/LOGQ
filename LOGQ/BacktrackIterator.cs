@@ -8,7 +8,7 @@ namespace LOGQ
     /// Class that iterates through actions produced by logical qyery's with action.
     /// Used as replacement to prolog predicate types as it's insensitive to available actions count
     /// </summary>
-    public class BacktrackIterator
+    public sealed class BacktrackIterator
     {
         private Func<Predicate<List<IBound>>> _generator;
         private Action _reset;

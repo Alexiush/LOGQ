@@ -13,7 +13,7 @@ namespace LOGQ
     /// getting and processing predicates passed by iterator and resetting it
     /// Also manages bounds copy storage and rolls bounds back when backtracked
     /// </summary>
-    public class LogicalAction
+    public sealed class LogicalAction
     {
         // To get rid of single variant / multiple variants system using interface that iterates through options
         protected BacktrackIterator _iterator;
@@ -72,7 +72,7 @@ namespace LOGQ
         /// Gets next action until it finds action that returns true or gets out of actions
         /// </summary>
         /// <returns>true if there is a true action, false if there is no more true actions</returns>
-        public virtual bool GetNext()
+        public bool GetNext()
         {
             Predicate<List<IBound>> predicate = _iterator.GetNext();
             bool madeReset = false;
@@ -114,7 +114,7 @@ namespace LOGQ
     /// If no branch is true query ends with false;
     /// Query can be used multiple times.
     /// </summary>
-    public class LogicalQuery
+    public sealed class LogicalQuery
     {
         /// <summary>
         /// Class that represents node(action) in query tree
@@ -144,7 +144,7 @@ namespace LOGQ
         /// <summary>
         /// Class that builds query tree
         /// </summary>
-        class QueryTreeBuilder
+        sealed class QueryTreeBuilder
         {
             private Node currentNode = null;
             private Node rootGlobal = null;
@@ -222,7 +222,7 @@ namespace LOGQ
         /// <summary>
         /// Class that represents query structure
         /// </summary>
-        class QueryTree
+        sealed class QueryTree
         {
             private Node stateNode = null;
             private Node rootGlobal = null;
