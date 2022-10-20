@@ -37,10 +37,14 @@
   <PropertyGroup>
 	<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
 	<PackageIcon>LogqIcon.png</PackageIcon>
-	<PackageReleaseNotes>- Added multiple mapping modes
-- New rule patterns
-- Minor fixes</PackageReleaseNotes>
-	<Version>1.1.0</Version>
+	<PackageReleaseNotes>- Retract method to delete facts and rules from knowledge base
+- Generic RuleWithBody that no more requires downcasting bound rule
+- Fast rule-checks
+- Collections of supported delegates supported too
+- Records and structs support
+- Generic types mapping
+- Explicitly adding fact/rule storages</PackageReleaseNotes>
+	<Version>2.1.0</Version>
   </PropertyGroup>
 	
   <ItemGroup>
@@ -70,6 +74,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Option" Version="3.0.1" />
     <PackageReference Include="System.CodeDom" Version="6.0.0" />
   </ItemGroup>
 </Project>

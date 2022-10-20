@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using static LOGQ.DelegateTransformer;
 
 namespace LOGQ
 {
@@ -12,7 +13,7 @@ namespace LOGQ
     /// getting and processing predicates passed by iterator and resetting it
     /// Also manages bounds copy storage and rolls bounds back when backtracked
     /// </summary>
-    public class LogicalAction
+    public sealed class LogicalAction
     {
         // To get rid of single variant / multiple variants system using interface that iterates through options
         protected BacktrackIterator _iterator;
@@ -26,7 +27,22 @@ namespace LOGQ
 
         internal LogicalAction(ICollection<Predicate<List<IBound>>> actionInitializer)
         {
-            _iterator = new BacktrackIterator(actionInitializer); 
+            _iterator = new BacktrackIterator(actionInitializer);
+        }
+
+        internal LogicalAction(ICollection<Func<bool>> actionInitializer)
+        {
+            _iterator = new BacktrackIterator(actionInitializer);
+        }
+
+        internal LogicalAction(ICollection<Action<List<IBound>>> actionInitializer)
+        {
+            _iterator = new BacktrackIterator(actionInitializer);
+        }
+
+        internal LogicalAction(ICollection<Action> actionInitializer)
+        {
+            _iterator = new BacktrackIterator(actionInitializer);
         }
 
         public List<IBound> _boundsCopy = new List<IBound>();
@@ -56,7 +72,7 @@ namespace LOGQ
         /// Gets next action until it finds action that returns true or gets out of actions
         /// </summary>
         /// <returns>true if there is a true action, false if there is no more true actions</returns>
-        public virtual bool GetNext()
+        public bool GetNext()
         {
             Predicate<List<IBound>> predicate = _iterator.GetNext();
             bool madeReset = false;
@@ -98,7 +114,7 @@ namespace LOGQ
     /// If no branch is true query ends with false;
     /// Query can be used multiple times.
     /// </summary>
-    public class LogicalQuery
+    public sealed class LogicalQuery
     {
         /// <summary>
         /// Class that represents node(action) in query tree
@@ -128,7 +144,7 @@ namespace LOGQ
         /// <summary>
         /// Class that builds query tree
         /// </summary>
-        class QueryTreeBuilder
+        sealed class QueryTreeBuilder
         {
             private Node currentNode = null;
             private Node rootGlobal = null;
@@ -206,7 +222,7 @@ namespace LOGQ
         /// <summary>
         /// Class that represents query structure
         /// </summary>
-        class QueryTree
+        sealed class QueryTree
         {
             private Node stateNode = null;
             private Node rootGlobal = null;
@@ -406,6 +422,39 @@ namespace LOGQ
         }
 
         /// <summary>
+        /// Adds logical action based on collection of predicates without copy storage
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
+        private LogicalQuery AddNode(ICollection<Func<bool>> actionInitializer, bool pathDirection)
+        {
+            return AddNode(new LogicalAction(actionInitializer), pathDirection);
+        }
+
+        /// <summary>
+        /// Adds logical action based on collection of actions
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
+        private LogicalQuery AddNode(ICollection<Action<List<IBound>>> actionInitializer, bool pathDirection)
+        {
+            return AddNode(new LogicalAction(actionInitializer), pathDirection);
+        }
+
+        /// <summary>
+        /// Adds logical action based on collection of actions without copy storage
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <param name="pathDirection">May it be added to the current branch or or branch</param>
+        /// <returns>Modified logical query</returns>
+        private LogicalQuery AddNode(ICollection<Action> actionInitializer, bool pathDirection)
+        {
+            return AddNode(new LogicalAction(actionInitializer), pathDirection);
+        }
+
+        /// <summary>
         /// Adds logical action based on single predicate
         /// </summary>
         /// <param name="actionInitializer">Predicate used to create an action</param>
@@ -429,7 +478,7 @@ namespace LOGQ
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private LogicalQuery AddNode(Func<bool> actionInitializer, bool pathDirection)
         {
-            return AddNode(copyStorage => actionInitializer(), pathDirection);
+            return AddNode(actionInitializer.ToPredicate(), pathDirection);
         }
 
         /// <summary>
@@ -441,7 +490,7 @@ namespace LOGQ
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private LogicalQuery AddNode(Action<List<IBound>> actionInitializer, bool pathDirection)
         {
-            return AddNode(copyStorage => { actionInitializer(copyStorage); return true; }, pathDirection);
+            return AddNode(actionInitializer.ToPredicate(), pathDirection);
         }
 
         /// <summary>
@@ -453,7 +502,7 @@ namespace LOGQ
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private LogicalQuery AddNode(Action actionInitializer, bool pathDirection)
         {
-            return AddNode(copyStorage => { actionInitializer(); return true; }, pathDirection);
+            return AddNode(actionInitializer.ToPredicate(), pathDirection);
         }
 
         /// <summary>
@@ -508,7 +557,7 @@ namespace LOGQ
                 {
                     if (!hasConsulted)
                     {
-                        factsIterator = new BacktrackIterator(knowledgeBase.CheckForFacts(fact));
+                        factsIterator = knowledgeBase.CheckForFacts(fact);
                         hasConsulted = true;
                     }
 
@@ -558,6 +607,39 @@ namespace LOGQ
         }
 
         /// <summary>
+        /// Adds action based on collection of predicates without copy storage
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery With(ICollection<Func<bool>> actionInitializer)
+        {
+            return AddNode(actionInitializer, true);
+        }
+
+        /// <summary>
+        /// Adds action based on collection of actions
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery With(ICollection<Action<List<IBound>>> actionInitializer)
+        {
+            return AddNode(actionInitializer, true);
+        }
+
+        /// <summary>
+        /// Adds action based on collection of actions without copy storage
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery With(ICollection<Action> actionInitializer)
+        {
+            return AddNode(actionInitializer, true);
+        }
+
+        /// <summary>
         /// Adds action based on predicate
         /// </summary>
         /// <param name="actionInitializer">Predicate used to create an action</param>
@@ -576,7 +658,7 @@ namespace LOGQ
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery With(Func<bool> actionInitializer)
         {
-            return AddNode(copyStorage => actionInitializer(), true);
+            return AddNode(actionInitializer, true);
         }
 
         /// <summary>
@@ -608,7 +690,7 @@ namespace LOGQ
         /// <param name="knowledgeBase">Knowledge base used for rule-checking</param>
         /// <returns>Modified logical query</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public LogicalQuery With(BoundRule rule, KnowledgeBase knowledgeBase)
+        public LogicalQuery With(BoundRule rule, KnowledgeBase knowledgeBase) 
         {
             return AddNode(rule, knowledgeBase, true);
         }
@@ -659,6 +741,39 @@ namespace LOGQ
         }
 
         /// <summary>
+        /// Adds action based on collection of predicates without copy storage to another branch
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery OrWith(ICollection<Func<bool>> actionInitializer)
+        {
+            return AddNode(actionInitializer, false);
+        }
+
+        /// <summary>
+        /// Adds action based on collection of actions to another branch
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery OrWith(ICollection<Action<List<IBound>>> actionInitializer)
+        {
+            return AddNode(actionInitializer, false);
+        }
+
+        /// <summary>
+        /// Adds action based on collection of actions without copy storage to another branch
+        /// </summary>
+        /// <param name="actionInitializer">List of predicates used to create an action</param>
+        /// <returns>Modified logical query</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public LogicalQuery OrWith(ICollection<Action> actionInitializer)
+        {
+            return AddNode(actionInitializer, false);
+        }
+
+        /// <summary>
         /// Adds action based on predicate to another branch
         /// </summary>
         /// <param name="actionInitializer">Predicate used to create an action</param>
@@ -677,7 +792,7 @@ namespace LOGQ
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LogicalQuery OrWith(Func<bool> actionInitializer)
         {
-            return AddNode(copyStorage => actionInitializer(), false);
+            return AddNode(actionInitializer, false);
         }
 
         /// <summary>
@@ -799,7 +914,7 @@ namespace LOGQ
         {
             CheckIfCanBuild();
 
-            return With(copyStorage =>  _tree.Cut());
+            return With(() =>  _tree.Cut());
         }
 
         /// <summary>
@@ -811,7 +926,7 @@ namespace LOGQ
         {
             CheckIfCanBuild();
 
-            return With(copyStorage => false);
+            return With(() => false);
         }
 
         /// <summary>
@@ -823,7 +938,7 @@ namespace LOGQ
         {
             CheckIfCanBuild();
 
-            return With(copyStorage => true);
+            return With(() => true);
         }
 
         /// <summary>

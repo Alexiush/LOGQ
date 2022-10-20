@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using static LOGQ.DelegateTransformer;
 
 namespace LOGQ.Extensions
 {
@@ -14,9 +15,37 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         public static LogicalAction Not(ICollection<Predicate<List<IBound>>> actionsToTry)
         {
-            return new LogicalAction(actionsToTry
-                .Select<Predicate<List<IBound>>, Predicate<List<IBound>>>
-                (predicate => context => !predicate(context)).ToList());
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
+        }
+
+        /// <summary>
+        /// Negates logical action created from list of predicates without copy storage
+        /// </summary>
+        /// <param name="actionsToTry">List of available actions</param>
+        /// <returns>Negated logical action (returns true only if all actions return false)</returns>
+        public static LogicalAction Not(ICollection<Func<bool>> actionsToTry)
+        {
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
+        }
+
+        /// <summary>
+        /// Negates logical action created from list of actions
+        /// </summary>
+        /// <param name="actionsToTry">List of available actions</param>
+        /// <returns>Negated logical action (returns true only if all actions return false)</returns>
+        public static LogicalAction Not(ICollection<Action<List<IBound>>> actionsToTry)
+        {
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
+        }
+
+        /// <summary>
+        /// Negates logical action created from list of actions without copy storage
+        /// </summary>
+        /// <param name="actionsToTry">List of available actions</param>
+        /// <returns>Negated logical action (returns true only if all actions return false)</returns>
+        public static LogicalAction Not(ICollection<Action> actionsToTry)
+        {
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
         }
 
         /// <summary>
@@ -35,7 +64,7 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogicalAction Not(Func<bool> actionToTry)
-            => Not(copyStorage => actionToTry());
+            => Not(actionToTry.ToPredicate());
 
         /// <summary>
         /// Negates logical action created from action that uses copy storage
@@ -44,7 +73,7 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogicalAction Not(Action<List<IBound>> actionToTry)
-            => Not(new List<Predicate<List<IBound>>> { copyStorage => { actionToTry(copyStorage); return true; } });
+            => Not(actionToTry.ToPredicate());
 
         /// <summary>
         /// Negates logical action created from action
@@ -53,7 +82,7 @@ namespace LOGQ.Extensions
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LogicalAction Not(Action actionToTry)
-            => Not(new List<Predicate<List<IBound>>> { copyStorage => { actionToTry(); return true; } });
+            => Not(actionToTry.ToPredicate());
 
         /// <summary>
         /// Negates logical action created from backtrack iterator
@@ -83,7 +112,7 @@ namespace LOGQ.Extensions
                 {
                     if (!hasConsulted)
                     {
-                        factsIterator = new BacktrackIterator(knowledgeBase.CheckForFacts(fact));
+                        factsIterator = knowledgeBase.CheckForFacts(fact);
                         hasConsulted = true;
                     }
 
@@ -103,7 +132,7 @@ namespace LOGQ.Extensions
         /// <param name="knowledgeBase">Knowledge base searched for rule pattern</param>
         /// <returns>Negated logical action (returns true only if all actions return false)</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static LogicalAction Not(BoundRule rule, KnowledgeBase knowledgeBase)
+        public static LogicalAction Not(BoundRule rule, KnowledgeBase knowledgeBase) 
         {
             bool hasConsulted = false;
             BacktrackIterator ruleIterator = null;

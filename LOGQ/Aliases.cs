@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Functional.Option;
+using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 
@@ -9,42 +11,88 @@ namespace LOGQ
     /// Generic implementation of FactsStorage
     /// </summary>
     /// <typeparam name="T">Type</typeparam>
-    internal class IndexedFactsStorage<T> : IIndexedFactsStorage
+    internal sealed class IndexedFactsStorage<T> : IIndexedFactsStorage
     {
-        HashSet<Fact> facts;
+        private HashSet<IFact> facts;
+        private long version = 0;
 
         public void Add(Fact fact)
         {
             facts.Add(fact);
+            version++;
         }
 
-        public List<Fact> FilteredBySample(BoundFact sample)
+        public void Retract(Fact fact)
+        {
+            facts.Remove(fact);
+            version++;
+        }
+
+        public List<IFact> FilteredBySample(BoundFact sample)
         {
             if (facts.Contains(sample))
             {
                 BoundFactAlias<T> factCasted = (BoundFactAlias<T>)sample;
-                return new List<Fact> { (Fact)(new FactAlias<T>(factCasted.Value)) };
+                return new List<IFact> { new FactAlias<T>(factCasted.Value) };
             }
 
-            return new List<Fact>();
+            return new List<IFact>();
+        }
+
+        public long GetVersion()
+        {
+            return version;
         }
     }
 
     /// <summary>
     /// General implementation of RulesStorage
     /// </summary>
-    internal class IndexedRulesStorage : IIndexedRulesStorage
+    internal sealed class IndexedRulesStorage<T> : IIndexedRulesStorage
     {
-        List<RuleWithBody> rules;
+        private RulesDictionary<T> rulesClustered = new RulesDictionary<T>();
+        private HashSet<RuleTemplate> rules = new HashSet<RuleTemplate>();
+        private long version = 0;
 
-        public void Add(RuleWithBody rule)
+        public void Add(RuleTemplate rule)
         {
-            rules.Add(rule);
+            if (rules.Contains(rule))
+            {
+                return;
+            }
+
+            var ruleCasted = (RuleWithBody<BoundRuleAlias<T>>)rule;
+            rulesClustered.Add(((RuleAlias<T>)ruleCasted.Head).Value, rule);
+
+            version++;
         }
 
-        public List<RuleWithBody> FilteredByPattern(BoundRule pattern)
+        public void Retract(RuleTemplate rule)
         {
-            return rules.Where(rule => rule.Head.Equals(pattern)).ToList();
+            if (!rules.Remove(rule))
+            {
+                return;
+            }
+
+            var ruleCasted = (RuleWithBody<BoundRuleAlias<T>>)rule;
+            rulesClustered.Retract(((RuleAlias<T>)ruleCasted.Head).Value, rule);
+
+            version++;
+        }
+
+        public List<RuleTemplate> FilteredByPattern(BoundRule pattern)
+        {
+            var patternCasted = ((BoundRuleAlias<T>)pattern).Value;
+
+            return rulesClustered.Get(patternCasted.Value is null ? Option<int>.None : patternCasted.Value.GetHashCode())
+                .GetValues()
+                .Where(rule => rule.Head.Equals(pattern))
+                .ToList();
+        }
+
+        public long GetVersion()
+        {
+            return version;
         }
     }
 
@@ -52,7 +100,7 @@ namespace LOGQ
     /// Generic implementation of Fact
     /// </summary>
     /// <typeparam name="T">Type</typeparam>
-    public class FactAlias<T>: Fact
+    public sealed class FactAlias<T>: Fact
     {
         public Variable<T> Value;
 
@@ -110,9 +158,14 @@ namespace LOGQ
             return typeof(T);
         }
 
-        public override IIndexedFactsStorage IndexedFactsStorage()
+        public static new IIndexedFactsStorage Storage()
         {
             return new IndexedFactsStorage<T>();
+        }
+
+        public override IIndexedFactsStorage IndexedFactsStorage()
+        {
+            return Storage();
         }
     }
 
@@ -120,7 +173,7 @@ namespace LOGQ
     /// Generic implementation of BoundFact
     /// </summary>
     /// <typeparam name="T">Type</typeparam>
-    public class BoundFactAlias<T>: BoundFact
+    public sealed class BoundFactAlias<T>: BoundFact
     {
         public BoundVariable<T> Value;
 
@@ -173,11 +226,6 @@ namespace LOGQ
             return typeof(T);
         }
 
-        public override IIndexedFactsStorage IndexedFactsStorage()
-        {
-            return new IndexedFactsStorage<T>();
-        }
-
         public BoundFactAlias(BoundVariable<T> value)
         {
             Value = value;
@@ -188,7 +236,7 @@ namespace LOGQ
     /// Generic implementation of Rule
     /// </summary>
     /// <typeparam name="T">Type</typeparam>
-    public class RuleAlias<T>: Rule
+    public sealed class RuleAlias<T>: Rule
     {
         public RuleVariable<T> Value;
 
@@ -241,9 +289,14 @@ namespace LOGQ
             return typeof(T);
         }
 
+        public static new IIndexedRulesStorage Storage()
+        {
+            return new IndexedRulesStorage<T>();
+        }
+
         public override IIndexedRulesStorage IndexedRulesStorage()
         {
-            return new IndexedRulesStorage();
+            return Storage();
         }
     }
 
@@ -251,7 +304,7 @@ namespace LOGQ
     /// Generic implementation of BoundRule
     /// </summary>
     /// <typeparam name="T">Type</typeparam>
-    public class BoundRuleAlias<T>: BoundRule
+    public sealed class BoundRuleAlias<T>: BoundRule
     {
         public BoundVariable<T> Value;
 
@@ -302,11 +355,6 @@ namespace LOGQ
         public override Type RuleType()
         {
             return typeof(T);
-        }
-
-        public override IIndexedRulesStorage IndexedRulesStorage()
-        {
-            return new IndexedRulesStorage();
         }
     }
 

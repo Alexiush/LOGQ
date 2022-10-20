@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Functional.Option;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -167,9 +168,34 @@ namespace LOGQ
     /// Base class for rule patterns
     /// </summary>
     /// <typeparam name="T">Underlying type</typeparam>
-    public class RuleVariable<T> : Variable<T> 
+    public abstract class RuleVariable<T> : Variable<T>, ISpecificallyStorable<T>
     { 
         protected RuleVariable() { }
+
+        public abstract Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter();
+        public abstract Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter();
+
+        public abstract Option<int> OptionHash();
+        public abstract Type PatternType();
+    }
+
+    /// <summary>
+    /// Interface for rule patterns that need specific approach for clustering
+    /// </summary>
+    /// <typeparam name="T">type</typeparam>
+    public interface ISpecificallyStorable<T> 
+    {
+        /// <summary>
+        /// Function used to get clusters to add/retract rule templates
+        /// </summary>
+        /// <returns>filtering function</returns>
+        public Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter();
+
+        /// <summary>
+        /// Function used to get clusters to query on rule templates
+        /// </summary>
+        /// <returns>filtering function</returns>
+        public Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter();
     }
 
     /// <summary>
@@ -200,6 +226,209 @@ namespace LOGQ
             }
 
             return true;
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                if (!dictionary.ContainsKey(0))
+                {
+                    dictionary.Add(0, new Cluster<RuleTemplate>());
+                }
+
+                return new List<Cluster<RuleTemplate>>
+                {
+                    // all values are tossed to one cluster
+                    dictionary[0]
+                };
+            };
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                var list = new List<Cluster<RuleTemplate>>();
+
+                if (dictionary.ContainsKey(0))
+                {
+                    // all values are tossed to one cluster
+                    list.Add(dictionary[0]);
+                };
+
+                return list;
+            };
+        }
+
+        public override Type PatternType()
+        {
+            return typeof(AnyValue<T>);
+        }
+
+        public override Option<int> OptionHash()
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Accepts any value excluding unbound values
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
+    public sealed class AnyValueBound<T> : RuleVariable<T>
+    {
+        public AnyValueBound() { }
+
+        public static bool operator ==(AnyValueBound<T> fact, BoundVariable<T> otherFact)
+        {
+            return otherFact.IsBound();
+        }
+
+        public static bool operator !=(AnyValueBound<T> fact, BoundVariable<T> otherFact)
+        {
+            return !(fact == otherFact);
+        }
+
+        public override bool Equals(object obj)
+        {
+            BoundVariable<T> variable = obj as BoundVariable<T>;
+
+            if (variable is null)
+            {
+                return false;
+            }
+
+            return variable.IsBound();
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                var list = new List<Cluster<RuleTemplate>>();
+
+                hash.Match(
+                    Some: (value) => {
+                        if (!dictionary.ContainsKey(0))
+                        {
+                            dictionary.Add(0, new Cluster<RuleTemplate>());
+                        };
+
+                        list.Add(dictionary[0]);
+                    },
+                    None: () => { }
+                );
+
+                return list;
+            };
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                var list = new List<Cluster<RuleTemplate>>();
+
+                hash.Match(
+                    Some: (value) => {
+                        if (dictionary.ContainsKey(0))
+                        {
+                            list.Add(dictionary[0]);
+                        };
+                    },
+                    None: () => { }
+                );
+
+                return list;
+            };
+        }
+
+        public override Type PatternType()
+        {
+            return typeof(AnyValueBound<T>);
+        }
+
+        public override Option<int> OptionHash()
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Accepts only values that is equal to it's value
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
+    public sealed class Equal<T> : RuleVariable<T>
+    {
+        private protected Equal() { }
+
+        public Equal(T value)
+        {
+            Value = value;
+        }
+
+        public static implicit operator Equal<T>(T value)
+            => new Equal<T>(value);
+
+        public static bool operator ==(Equal<T> fact, BoundVariable<T> otherFact)
+        {
+            return fact.Value.Equals(otherFact.Value);
+        }
+
+        public static bool operator !=(Equal<T> fact, BoundVariable<T> otherFact)
+        {
+            return !(fact == otherFact);
+        }
+
+        public override bool Equals(object obj)
+        {
+            BoundVariable<T> variable = obj as BoundVariable<T>;
+
+            if (variable is null)
+            {
+                return false;
+            }
+
+            return (Variable<T>)Value == variable.Value;
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                if (!dictionary.ContainsKey(hash))
+                {
+                    dictionary.Add(hash, new Cluster<RuleTemplate>());
+                }
+
+                return new List<Cluster<RuleTemplate>> { dictionary[hash] };
+            };
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                var list = new List<Cluster<RuleTemplate>>();
+
+                if (dictionary.ContainsKey(hash))
+                {
+                    list.Add(dictionary[hash]);
+                }
+
+                return list;
+            };
+        }
+
+        public override Type PatternType()
+        {
+            return typeof(Equal<T>);
+        }
+
+        public override Option<int> OptionHash()
+        {
+            return Value is null ? Option<int>.None : Value.GetHashCode();
         }
     }
 
@@ -307,6 +536,137 @@ namespace LOGQ
 
             return (Variable<T>)Value != variable.Value;
         }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                if (!dictionary.ContainsKey(hash))
+                {
+                    dictionary.Add(hash, new Cluster<RuleTemplate>());
+                }
+
+                return new List<Cluster<RuleTemplate>> { dictionary[hash] };
+            };
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                var filtered = dictionary
+                    .Where(pair => pair.Key != hash);
+
+                var list = new List<Cluster<RuleTemplate>>();
+                
+                foreach (var pair in filtered)
+                {
+                    list.Add(pair.Value);
+                }
+
+                return list;
+            };
+        }
+
+        public override Type PatternType()
+        {
+            return typeof(NotEqual<T>);
+        }
+
+        public override Option<int> OptionHash()
+        {
+            return Value is null ? Option<int>.None : Value.GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// Accepts only values that is not equal to it's value and is bound
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
+    public sealed class NotEqualBound<T> : RuleVariable<T>
+    {
+        private protected NotEqualBound() { }
+
+        public NotEqualBound(T value)
+        {
+            Value = value;
+        }
+
+        public static bool operator ==(NotEqualBound<T> fact, BoundVariable<T> otherFact)
+        {
+            return !fact.Value.Equals(otherFact.Value) && otherFact.IsBound();
+        }
+
+        public static bool operator !=(NotEqualBound<T> fact, BoundVariable<T> otherFact)
+        {
+            return !(fact == otherFact);
+        }
+
+        public override bool Equals(object obj)
+        {
+            BoundVariable<T> variable = obj as BoundVariable<T>;
+
+            if (variable is null)
+            {
+                return false;
+            }
+
+            return (Variable<T>)Value != variable.Value && variable.IsBound();
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                var list = new List<Cluster<RuleTemplate>>();
+
+                if (!hash.HasValue)
+                {
+                    return list;
+                }
+
+                if (!dictionary.ContainsKey(hash))
+                {
+                    dictionary.Add(hash, new Cluster<RuleTemplate>());
+                }
+
+                list.Add(dictionary[hash]);
+                return list;
+            };
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                var list = new List<Cluster<RuleTemplate>>();
+
+                if (!hash.HasValue)
+                {
+                    return list;
+                }
+
+                var filtered = dictionary
+                    .Where(pair => pair.Key != hash);
+
+                foreach (var pair in filtered)
+                {
+                    list.Add(pair.Value);
+                }
+
+                return list;
+            };
+        }
+
+        public override Type PatternType()
+        {
+            return typeof(NotEqualBound<T>);
+        }
+
+        public override Option<int> OptionHash()
+        {
+            return Value.GetHashCode();
+        }
     }
 
     /// <summary>
@@ -371,6 +731,58 @@ namespace LOGQ
             }
 
             return !variable.IsBound();
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                var list = new List<Cluster<RuleTemplate>>();
+
+                hash.Match(
+                    Some: (value) => { },
+                    None: () => {
+                        if (!dictionary.ContainsKey(0))
+                        {
+                            dictionary.Add(0, new Cluster<RuleTemplate>());
+                        }
+
+                        list.Add(dictionary[0]);
+                    }
+                );
+
+                return list;
+            };
+        }
+
+        public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+        {
+            return (hash, dictionary) =>
+            {
+                var list = new List<Cluster<RuleTemplate>>();
+
+                hash.Match(
+                    Some: (value) => { },
+                    None: () => {
+                        if (dictionary.ContainsKey(0))
+                        {
+                            list.Add(dictionary[0]);
+                        }
+                    }
+                );
+
+                return list;
+            };
+        }
+
+        public override Type PatternType()
+        {
+            return typeof(UnboundValue<T>);
+        }
+
+        public override Option<int> OptionHash()
+        {
+            return Option<int>.None;
         }
     }
 }
