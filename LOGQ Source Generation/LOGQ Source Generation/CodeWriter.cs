@@ -416,6 +416,7 @@ namespace LOGQ_Source_Generation
                         sb.Append(", ");
                     }
 
+
                     if (variablePrefix == "Rule")
                     {
                         sb.Append($"new Equal<{property.PropertyType}>(origin.{property.PropertyName})");
@@ -642,8 +643,7 @@ namespace LOGQ_Source_Generation
 
             // End
             sb.Append(@"
-    }
-");
+    }");
 
             return sb.ToString();
         }
@@ -737,7 +737,20 @@ namespace LOGQ_Source_Generation
                     " + $"RulesDictionary<{property.PropertyType}> {property.PropertyName} = new RulesDictionary<{property.PropertyType}>();" + @"      
                 ");
             }
+            
+            ")
+                
+                .Append(@"return clusters
+                .OrderBy(cluster => cluster.size)
+                .First()
+                .cluster
+                .GetValues();")
+                
+            .Append(@"
+        }
+        ");
 
+            // End
             sb.Append(@"
         HashSet<RuleTemplate> rules = new HashSet<RuleTemplate>();
         long version = 0;
@@ -902,7 +915,6 @@ namespace LOGQ_Source_Generation
             return version;
         }
         ");
-
             // End
             sb.Append(@"
     }

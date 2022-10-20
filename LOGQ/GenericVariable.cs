@@ -433,6 +433,76 @@ namespace LOGQ
     }
 
     /// <summary>
+    /// Accepts any value excluding unbound values
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
+    public sealed class AnyValueBound<T> : RuleVariable<T>
+    {
+        public AnyValueBound() { }
+
+        public static bool operator ==(AnyValueBound<T> fact, BoundVariable<T> otherFact)
+        {
+            return otherFact.IsBound();
+        }
+
+        public static bool operator !=(AnyValueBound<T> fact, BoundVariable<T> otherFact)
+        {
+            return !(fact == otherFact);
+        }
+
+        public override bool Equals(object obj)
+        {
+            BoundVariable<T> variable = obj as BoundVariable<T>;
+
+            if (variable is null)
+            {
+                return false;
+            }
+
+            return variable.IsBound();
+        }
+    }
+
+    /// <summary>
+    /// Accepts only values that is equal to it's value
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
+    public sealed class Equal<T> : RuleVariable<T>
+    {
+        private protected Equal() { }
+
+        public Equal(T value)
+        {
+            Value = value;
+        }
+
+        public static implicit operator Equal<T>(T value)
+            => new Equal<T>(value);
+
+        public static bool operator ==(Equal<T> fact, BoundVariable<T> otherFact)
+        {
+            return fact.Value.Equals(otherFact.Value);
+        }
+
+        public static bool operator !=(Equal<T> fact, BoundVariable<T> otherFact)
+        {
+            return !(fact == otherFact);
+        }
+
+        public override bool Equals(object obj)
+        {
+            BoundVariable<T> variable = obj as BoundVariable<T>;
+
+            if (variable is null)
+            {
+                return false;
+            }
+
+            return (Variable<T>)Value == variable.Value;
+        }
+    }
+
+    /// <summary>
     /// Accepts only values that is not equal to it's value
     /// </summary>
     /// <typeparam name="T">Underlying type</typeparam>
@@ -596,6 +666,42 @@ namespace LOGQ
         public override Option<int> OptionHash()
         {
             return Value.GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// Accepts only values that is not equal to it's value and is bound
+    /// </summary>
+    /// <typeparam name="T">Underlying type</typeparam>
+    public sealed class NotEqualBound<T> : RuleVariable<T>
+    {
+        private protected NotEqualBound() { }
+
+        public NotEqualBound(T value)
+        {
+            Value = value;
+        }
+
+        public static bool operator ==(NotEqualBound<T> fact, BoundVariable<T> otherFact)
+        {
+            return !fact.Value.Equals(otherFact.Value) && otherFact.IsBound();
+        }
+
+        public static bool operator !=(NotEqualBound<T> fact, BoundVariable<T> otherFact)
+        {
+            return !(fact == otherFact);
+        }
+
+        public override bool Equals(object obj)
+        {
+            BoundVariable<T> variable = obj as BoundVariable<T>;
+
+            if (variable is null)
+            {
+                return false;
+            }
+
+            return (Variable<T>)Value != variable.Value && variable.IsBound();
         }
     }
 

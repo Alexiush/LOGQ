@@ -12,6 +12,12 @@ namespace LOGQ
         /// </summary>
         /// <returns>Type mapped to the fact</returns>
         abstract public Type FactType();
+
+        /// <summary>
+        /// Returns IndexedFactsCollection generated specifically for this type
+        /// </summary>
+        /// <returns>IndexedFactsCollection for this type</returns>
+        abstract public IIndexedFactsStorage IndexedFactsStorage();
     }
 
     public abstract class StorageableFact
@@ -56,6 +62,12 @@ namespace LOGQ
         /// </summary>
         /// <returns>Type mapped to the rule</returns>
         abstract public Type RuleType();
+
+        /// <summary>
+        /// Returns IndexedRulesCollection generated specifically for this type
+        /// </summary>
+        /// <returns>IndexedRulesCollection for this type</returns>
+        abstract public IIndexedRulesStorage IndexedRulesStorage();
     }
 
     public abstract class StorageableRule
