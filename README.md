@@ -15,7 +15,7 @@ LogicalQuery query = new LogicalQuery()
   .With(() => true) 
   .Cut()
   .Fail()
-  .OrWith(() => 4 == 8/2)
+  .OrWith(() => Console.WriteLine("Action!"))
   .Succed();
 ```
 
@@ -78,23 +78,13 @@ KnowledgeBase students = new KnowledgeBase();
 students.DeclareFact(new FactStudent("Andrew", 7))
 
 // Also we know that if we have a record about student in higher grade we also have records about that student in lesser grades
-students.DeclareRule(new RuleWithBody(
+students.DeclareRule(new RuleWithBody<BoundRuleStudent>(
     new RuleStudent(new AnyValue<string>(), new AnyValue<int>()),
-    bound => {
-        var boundRule = bound as BoundRuleStudent;
-
-        if (boundRule is null)
-        {
-            return new LogicalQuery().Fail();
-        }
-
-        // Check if there are record in current grade
-        // If there is no record check higher grades up to 12th
-        return new LogicalQuery()
-          .With(new BoundFactStudent(boundRule.Name, boundRule.Grade), students)
-          .OrWith(() => boundRule.Grade.Value <= 12)
-          .With(new BoundRuleStudent(boundRule.Name, boundRule.Grade.Value + 1), students);
-    }));
+    bound => new LogicalQuery()
+        .With(new BoundFactStudent(bound.Name, bound.Grade), students)
+        .OrWith(context => bound.Grade.Value <= 12)
+        .With(new BoundRuleStudent(bound.Name, bound.Grade.Value + 1), students)
+    ));
 ```
 
 ### Facts 
