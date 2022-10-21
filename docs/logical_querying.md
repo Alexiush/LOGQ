@@ -66,7 +66,7 @@ Logical actions can be created in many ways:
 - With method that accepts as initializers:
   - Action (with and without copy storage) 
   - Single predicate (with and without copy storage)
-  - Collection of predicates
+  - Collection of predicates/actions
   - Backtrack iterator
   - Bound fact + knowledge base to perform fact-check on
   - Bound rule + knowledge base to perform rule-check on 
@@ -80,7 +80,7 @@ LogicalQuery query = new LogicalQuery()
   .With(copyStorage => true) 
   .Cut()
   .Fail()
-  .OrWith(copyStorage => 4 == 8/2)
+  .OrWith(() => Console.WriteLine("Action!"))
   .Succed();
 ```
 
@@ -118,7 +118,7 @@ LogicalQuery query = new LogicalQuery()
 
 ### Logical query state
 
-Logical query state is pretty unusual:
+Logical query state is pretty unusual (at least it does not the same as Prolog one):
 - Query remembers its state, when executed again it continues to iterate through proofs - query that returns true on first (2nd, 3rd and so on) iterations
 can return false. To reset query Reset method used.
 - Query can't be modified after first execution. If you declare your query long before the execution and don't want it to be modified later use End method.
