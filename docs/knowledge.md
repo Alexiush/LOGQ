@@ -13,12 +13,10 @@ In logical programming data about domain presented with facts and rules:
 
 ### Facts
 
-Facts are represented by classes inherited from LOGQ.Fact. LOGQ.Fact asks for FactType implementation - origin type of the fact 
-(facts can be and most of them are mapped from objects, those defined manually can return own type) and for GetIndexedStorage implementation - object that implements IFactsIndexedStorage interface and wisely searches for fact. Actually, it also needs to have == and != operators, Equals and GetHashCode methods overloaded
-as facts must be compared and searched somehow. Plain data that fact contains defined with variables - value containers.
+Facts are represented by classes inherited from LOGQ.Fact. LOGQ.Fact requires implementation of FactType method that returns type that you represent as a fact and IndexedFactsStorage method that returns facts storage for this kind of facts. To work right it also needs to implement ==, !=, Equals for (Fact, Fact) and (Fact, BoundFact), GetHashCode and static Storage method that works similar to IndexedFactsStorage method. Most of those methods rely on comparison of all fields that represented by instances of Variable. 
 
 ```cs
-public class FactStudent : LOGQ.Fact
+public sealed class FactStudent : LOGQ.Fact   
 {
     public Variable<string> Name;
     public Variable<int> Grade;
@@ -52,13 +50,12 @@ public class FactStudent : LOGQ.Fact
     public override bool Equals(object? obj)
     {
         FactStudent first = obj as FactStudent;
-
         if (!(first is null))
         {
             return this == first;
         }
+        
         BoundFactStudent second = obj as BoundFactStudent;
-
         if (!(second is null))
         {
             return this == second;
@@ -71,10 +68,9 @@ public class FactStudent : LOGQ.Fact
     {
         List<int> propertyCodes = new List<int>
         {
-            Name.GetHashCode(),
-            Grade.GetHashCode(),
+            Name.Value.GetHashCode(),
+            Grade.Value.GetHashCode(),
         };
-        
         int hash = 19;            
 
         unchecked
@@ -93,19 +89,25 @@ public class FactStudent : LOGQ.Fact
         return typeof(LOGQ_Examples.ExampleSearchForStudent.Student);
     }
 
+    public static new LOGQ.IIndexedFactsStorage Storage()
+    {
+        return new IndexedFactStudentStorage (); 
+    }
+
+
     public override LOGQ.IIndexedFactsStorage IndexedFactsStorage()
     {
-        return new IndexedFactStudentStorage();
+        return Storage();
     }
 
 }
 ```
 
-Facts used in queries are different. They are called BoundFacts as their variables can be bound to new values during logical query execution. 
-When bound fact matches fact, all of its values must be bound to values of the matched fact for what we need to define Bind method.
+Facts used in queries are different. They are called BoundFacts as their variables can be bound to new values during logical query execution or even can be unbound. 
+When bound fact matches fact, all of its values must be bound to values of the matched fact for what we need to define Bind method. Mostly they are similar to facts, but they don't need to implement IndexedFactStorage method, don't need to override GetHashCode and their ==, !=, Equals compare (BoundFact, BoundFact) or (BoundFact, Fact). 
 
 ```cs
-public class BoundFactStudent : LOGQ.BoundFact
+public sealed class BoundFactStudent : LOGQ.BoundFact
 {
     public BoundVariable<string> Name;
     public BoundVariable<int> Grade;
@@ -139,13 +141,12 @@ public class BoundFactStudent : LOGQ.BoundFact
     public override bool Equals(object? obj)
     {
         BoundFactStudent first = obj as BoundFactStudent;
-
         if (!(first is null))
         {
             return this == first;
         }
+        
         FactStudent second = obj as FactStudent;
-
         if (!(second is null))
         {
             return this == second;
@@ -157,11 +158,6 @@ public class BoundFactStudent : LOGQ.BoundFact
     public override Type FactType()
     {
         return typeof(LOGQ_Examples.ExampleSearchForStudent.Student);
-    }
-
-    public override LOGQ.IIndexedFactsStorage IndexedFactsStorage()
-    {
-        return new IndexedFactStudentStorage();
     }
 
     public override void Bind(Fact fact, List<IBound> copyStorage)
@@ -179,33 +175,24 @@ public class BoundFactStudent : LOGQ.BoundFact
 
 ### Rules
 
-Rules are defined by RuleWithBody class, instances of which are made with rule pattern (Rule class) and function that receives BoundRule (from query) and returns
-logical query that proves or disproves that rule is appropriate. 
+Rules are defined by RuleWithBody<T> class, instances of which are made with rule pattern (Rule class) and function that receives BoundRule (from query) which is also T and returns logical query that proves or disproves that rule is appropriate. 
 
 ```cs
-RuleWithBody example = new RuleWithBody(
-  // Rule head - pattern
-  new RuleStudent(new AnyValue<string>(), new AnyValue<int>()),
-  // Rule body - proof
-  bound => {
-      var boundRule = bound as BoundRuleStudent;
-
-      if (boundRule is null)
-      {
-          return new LogicalQuery().Fail();
-      }
-
-      return new LogicalQuery()
-      .With(new BoundFactStudent(boundRule.Name, boundRule.Grade), students)
-      .OrWith(() => boundRule.Grade.Value <= 12)
-      .With(new BoundRuleStudent(boundRule.Name, boundRule.Grade.Value + 1), students);
-  }));
+RuleWithBody example = new RuleWithBody<BoundRuleStudent>(
+    // Rule head
+    new RuleStudent(new AnyValue<string>(), new AnyValue<int>()),
+    // Rule body
+    bound => new LogicalQuery()
+        .With(new BoundFactStudent(bound.Name, bound.Grade), students)
+        .OrWith(context => bound.Grade.Value <= 12)
+        .With(new BoundRuleStudent(bound.Name, bound.Grade.Value + 1), students)
+    );
 ```
 
-Rule class there stands for rule pattern, it's similar to fact, except it does not provide value, but pattern:
+Rule class there stands for rule pattern, it's similar to fact, except it does not provide value, but pattern through rule variables that act like patterns. It uses IndexedRulesStorage rather then IndexedFactsStorage and does not need GetHashCode override.
 
 ```cs
-public class RuleStudent : LOGQ.Rule
+public sealed class RuleStudent : LOGQ.Rule     
 {
     public RuleVariable<string> Name;
     public RuleVariable<int> Grade;
@@ -259,18 +246,22 @@ public class RuleStudent : LOGQ.Rule
         return typeof(LOGQ_Examples.ExampleSearchForStudent.Student);
     }
 
-    public override LOGQ.IIndexedRulesStorage IndexedRulesStorage()
+    public static new LOGQ.IIndexedRulesStorage Storage()
     {
-        return new IndexedRuleStudentStorage();
+        return new IndexedRuleStudentStorage (); 
     }
 
+    public override LOGQ.IIndexedRulesStorage IndexedRulesStorage()
+    {
+        return Storage();
+    }
 }
 ```
 
 And bound rules are even more similar to bound facts than rules to facts, when rules use patterns instead of values bound rules use the same bound variables:
 
 ```cs
-public class BoundRuleStudent : LOGQ.BoundRule
+public sealed class BoundRuleStudent : LOGQ.BoundRule
 {
     public BoundVariable<string> Name;
     public BoundVariable<int> Grade;
@@ -323,12 +314,6 @@ public class BoundRuleStudent : LOGQ.BoundRule
     {
         return typeof(LOGQ_Examples.ExampleSearchForStudent.Student);
     }
-
-    public override LOGQ.IIndexedRulesStorage IndexedRulesStorage()
-    {
-        return new IndexedRuleStudentStorage();
-    }
-
 }
 ```
 
@@ -375,47 +360,74 @@ RuleStudent rule = new RuleStudent(new AnyValue<string>(), new NotEqual<int>(1))
     
 In most cases searching for facts can be speeded up with indexes just like in databases. Standard implementation of indexed storage uses HashSet<Fact> for fact itself and Dictionary<int, Cluster<Fact>> (Cluster is an abstraction on a list of facts, with dictionaries facts are grouped in clusters by some property hashcodes) for each property that can give valid hashcodes.  
     
-For rules and cases when hashing can't be applied simpler and slower solution used - lists. 
+For cases when hashing can't be applied simpler and slower (asymptotically) solution used - lists. It also used for rules by default, as rules count does not grow big usually and overhead for rules indexed storage is bigger.
+    
+However, mapped types can be marked as expected to represent vast amount of domain rules thus indexed rule storages will be used. They rely on specific properties of each pattern, so they generate collection for each pattern and use filters on clusters defined within patterns to access data.
     
 ```cs
 // Generated storages
     
-public class IndexedFactStudentStorage : LOGQ.IIndexedFactsStorage
+public sealed class IndexedFactStudentStorage : LOGQ.IIndexedFactsStorage
 {
-    List<LOGQ.Fact> facts = new List<LOGQ.Fact>();
+    List<LOGQ.IFact> facts = new List<LOGQ.IFact>();
     HashSet<FactStudent> factSet = new HashSet<FactStudent>();
 
-    Dictionary<int, Cluster<Fact>> Name = new Dictionary<int, Cluster<Fact>>();
-    Dictionary<int, Cluster<Fact>> Grade = new Dictionary<int, Cluster<Fact>>();
+    long version = 0;
+
+    Dictionary<int, Cluster<IFact>> Name = new Dictionary<int, Cluster<IFact>>();
+    Dictionary<int, Cluster<IFact>> Grade = new Dictionary<int, Cluster<IFact>>();
 
     public void Add(LOGQ.Fact fact)
     {
         FactStudent factCasted = (FactStudent)fact;
+        if (!factSet.Add(factCasted))
+        {
+            return;
+        }
 
         facts.Add(factCasted);
-        factSet.Add(factCasted);
-
         int NameHash = factCasted.Name.Value.GetHashCode();
         if (!Name.ContainsKey(NameHash))
         {
-            Name.Add(NameHash, new Cluster<Fact>());
+            Name.Add(NameHash, new Cluster<IFact>());
         } 
         Name[NameHash].Add(fact);
 
         int GradeHash = factCasted.Grade.Value.GetHashCode();
         if (!Grade.ContainsKey(GradeHash))
         {
-            Grade.Add(GradeHash, new Cluster<Fact>());
+            Grade.Add(GradeHash, new Cluster<IFact>());
         } 
         Grade[GradeHash].Add(fact);
 
 
+        version++;
     }
 
-    public List<LOGQ.Fact> FilteredBySample(LOGQ.BoundFact sample)
+    public void Retract(LOGQ.Fact fact)
+    {
+        FactStudent factCasted = (FactStudent)fact;
+
+        if (!factSet.Remove(factCasted))
+        {
+            return;
+        }
+
+        facts.Remove(factCasted);
+        int NameHash = factCasted.Name.Value.GetHashCode();
+        Name[NameHash].Remove(fact);
+
+        int GradeHash = factCasted.Grade.Value.GetHashCode();
+        Grade[GradeHash].Remove(fact);
+
+
+        version++;
+    }
+
+    public List<LOGQ.IFact> FilteredBySample(LOGQ.BoundFact sample)
     {
         BoundFactStudent sampleCasted = (BoundFactStudent)sample;
-        List<(Cluster<Fact> cluster, int size)> clusters = new List<(Cluster<Fact> cluster, int size)>();
+        List<(Cluster<IFact> cluster, int size)> clusters = new List<(Cluster<IFact> cluster, int size)>();
 
         if (sampleCasted.Name.IsBound())
         {
@@ -423,12 +435,12 @@ public class IndexedFactStudentStorage : LOGQ.IIndexedFactsStorage
 
             if (Name.ContainsKey(code))
             {
-                Cluster<Fact> cluster = Name[code];
+                Cluster<IFact> cluster = Name[code];
                 clusters.Add((cluster, cluster.Size));
             }
             else
             {
-                clusters.Add((new Cluster<Fact>(), 0));
+                clusters.Add((new Cluster<IFact>(), 0));
             }
         }
 
@@ -439,12 +451,12 @@ public class IndexedFactStudentStorage : LOGQ.IIndexedFactsStorage
 
             if (Grade.ContainsKey(code))
             {
-                Cluster<Fact> cluster = Grade[code];
+                Cluster<IFact> cluster = Grade[code];
                 clusters.Add((cluster, cluster.Size));
             }
             else
             {
-                clusters.Add((new Cluster<Fact>(), 0));
+                clusters.Add((new Cluster<IFact>(), 0));
             }
         }
 
@@ -457,14 +469,14 @@ public class IndexedFactStudentStorage : LOGQ.IIndexedFactsStorage
 
             if (factSet.Contains(factCopy))
             {
-                return new List<LOGQ.Fact> { (LOGQ.Fact)(factCopy) };
+                return new List<LOGQ.IFact> { (LOGQ.Fact)(factCopy) };
             }
 
         }
 
         if (clusters.Count == 0)
         {
-            return facts.Where(fact => fact.Equals(sample)).ToList();
+            return facts.Where(fact => sample.Equals(fact)).ToList();
         }
 
         return clusters
@@ -474,21 +486,49 @@ public class IndexedFactStudentStorage : LOGQ.IIndexedFactsStorage
             .GetValues();
     }
 
-}
-
-public class IndexedRuleStudentStorage : LOGQ.IIndexedRulesStorage
-{
-    List<LOGQ.RuleWithBody> rules = new List<LOGQ.RuleWithBody>();       
-
-
-    public void Add(LOGQ.RuleWithBody rule)
+    public long GetVersion()
     {
-        rules.Add(rule);
+        return version;
     }
 
-    public List<LOGQ.RuleWithBody> FilteredByPattern(LOGQ.BoundRule pattern)
+}
+
+public sealed class IndexedRuleStudentStorage : LOGQ.IIndexedRulesStorage
+{
+
+    List<LOGQ.RuleTemplate> rules = new List<LOGQ.RuleTemplate>();       
+    HashSet<RuleTemplate> ruleSet = new HashSet<RuleTemplate>();
+    long version = 0;
+
+    public void Add(LOGQ.RuleTemplate rule)
+    {
+        if (!ruleSet.Add(rule))
+        {
+            return;
+        }
+
+        rules.Add(rule);
+        version++;
+    }
+
+    public void Retract(LOGQ.RuleTemplate rule)
+    {
+        if (!ruleSet.Remove(rule))
+        {
+            return;
+        }
+
+        rules.Remove(rule);
+        version++;
+    }
+
+    public List<LOGQ.RuleTemplate> FilteredByPattern(LOGQ.BoundRule pattern)
     {
         return rules.Where(rule => rule.Head.Equals(pattern)).ToList();
+    }
+    public long GetVersion()
+    {
+        return version;
     }
 }
 ```
@@ -496,7 +536,7 @@ public class IndexedRuleStudentStorage : LOGQ.IIndexedRulesStorage
 ### Objects mapping
 
 LOGQ contains [source generator](https://docs.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview).
-It can automatically map your classes to fact classes: Fact, BoundFact, Rule, BoundRule. It's highly recommended to use as usually 
+It can automatically map your classes|structs|records to fact classes: Fact, BoundFact, Rule, BoundRule. It's highly recommended to use as usually 
 you would need standard behaviour for your facts, and it's the best way to get it.
 
 Classes to be mapped must be marked with marker attribute LOGQ.Fact. It requires factName - suffix for class names and has optional mapping mode:
@@ -547,7 +587,7 @@ public static class FactExtensions
 }
 ```
     
-Generator creates indexed storages for facts and rules too. By default it assumes that it's possible to search for facts faster by hashing the fact and values of each variable. Of course it's not always true, and with NoIndexing and NotHashComparable attributes it can be specified explicitly if fact can't be indexed at all or if it's so for some of it's values.
+Generator creates indexed storages for facts and rules too. By default it assumes that it's possible to search for facts faster by hashing the fact and values of each variable. Of course it's not always true, and with NoIndexing and NotHashComparable attributes it can be specified explicitly if fact can't be indexed at all or if it's so for some of it's values. HighRuleCountDomain attribute tells that IndexedRulesStorage must be hash-based.
     
 ```cs
 // Property that contains WeirdlyHashedList can't be indexed 
@@ -567,11 +607,30 @@ public class JustWeirdList
     public WeirdlyHashedList WierdList { get; set; }
 }   
     
+// There must be lots of rules with wierd lists
+[LOGQ.HighRuleCountDomain]
+[LOGQ.Fact("AnotherWeirdListWithNumber")]
+public class AnotherWeirdListWithNumber
+{
+    [LOGQ.NotHashComparable]
+    public WeirdlyHashedList WierdList { get; set; }
+    public int Number { get; set; }
+}
+    
+// And those rules won't be checked fast
+[LOGQ.HighRuleCountDomain]
+[LOGQ.NoIndexing]
+[LOGQ.Fact("AnotherWeirdList")]
+public class AnotherWeirdList
+{
+    public WeirdlyHashedList WierdList { get; set; }
+} 
 ```
 
 ### KnowledgeBase
 
 In LOGQ data is grouped inside knowledge base. It's storing facts and rules and describes how to make fact-checking or rule-checking on it.
+    
 ```cs
 // Knowledge base creation
 KnowledgeBase knowledge = new KnowledgeBase();
@@ -580,19 +639,11 @@ KnowledgeBase knowledge = new KnowledgeBase();
 students.DeclareFact(new FactStudent("Andrew", 7));
 
 // Rule declaration
-students.DeclareRule(new RuleWithBody(
+students.DeclareRule(new RuleWithBody<BoundRuleStudent>(
     new RuleStudent(new AnyValue<string>(), new AnyValue<int>()),
-    bound => {
-        var boundRule = bound as BoundRuleStudent;
-
-        if (boundRule is null)
-        {
-            return new LogicalQuery().Fail();
-        }
-
-        return new LogicalQuery()
-        .With(new BoundFactStudent(boundRule.Name, boundRule.Grade), students)
-        .OrWith(() => boundRule.Grade.Value <= 12)
-        .With(new BoundRuleStudent(boundRule.Name, boundRule.Grade.Value + 1), students);
-    }));
+    bound => new LogicalQuery()
+        .With(new BoundFactStudent(bound.Name, bound.Grade), students)
+        .OrWith(context => bound.Grade.Value <= 12)
+        .With(new BoundRuleStudent(bound.Name, bound.Grade.Value + 1), students)
+    ));
 ```
