@@ -12,24 +12,35 @@ nav_order: 1
 ### Fact, Bound fact
 
 Fact - base class for facts. FactType method must return the base type of the fact 
-(to compare same base type facts with knowledge base, when class created manually must return fact class). IndexedFactsStorage method must return suitable IIndexedFactsStorage (to search for facts fast). == and != operators, Equals and GetHashCode methods used for fact to fact comparison.
+(to compare same base type facts with knowledge base, when class created manually must return fact class). IndexedFactsStorage method must return suitable IIndexedFactsStorage (to search for facts fast). Storage method allows to get indexed storage without any class instance. == and != operators, Equals and GetHashCode methods used for fact to fact comparison.
 
 ```cs
-public abstract class Fact 
+public interface IFact
 {
     abstract public Type FactType();
+}
+
+public abstract class StorageableFact
+{
+    public static IIndexedFactsStorage Storage() => throw new InvalidOperationException("Can't call storage on base type");
     abstract public IIndexedFactsStorage IndexedFactsStorage();
+}
+
+public abstract class Fact: StorageableFact, IFact
+{
+    abstract public Type FactType();
+    abstract public override IIndexedFactsStorage IndexedFactsStorage();
 }
 ```
 
 BoundFact - base class for bound facts, used in queries. FactType method must return the base type of the fact 
 (to compare same base type facts with knowledge base, when class created manually must return fact class).
-IndexedFactsStorage method must return suitable IIndexedFactsStorage (to search for facts fast). == and != operators,
-Equals and GetHashCode methods used for fact to fact comparison.
+== and != operators, Equals and GetHashCode methods used for fact to fact comparison.
 Bind method used to bind values to matched facts, needs fact to bound to and journal to make records about changes.
 ```cs
-public abstract class BoundFact : Fact 
+public abstract class BoundFact : IFact 
 {
+    abstract public Type FactType();
     abstract public void Bind(Fact fact, List<IBound> copyStorage);
 }
 ```
@@ -38,32 +49,56 @@ public abstract class BoundFact : Fact
 
 Rule - base class for rule patterns. RuleType method must return the base type of the rule.
 (to compare same base type rules with knowledge base, when class created manually must return rule class).
-IndexedRulesStorage method must return suitable IIndexedRulesStorage.
+IndexedRulesStorage method must return suitable IIndexedRulesStorage. Storage method allows to get indexed storage without any class instance.
 Equals method, == and != operators used for rule to rule comparison.
 
 ```cs
-public abstract class Rule 
+public interface IRule
 {
     abstract public Type RuleType();
+}
+
+public abstract class StorageableRule
+{
+    public static IIndexedRulesStorage Storage() => throw new InvalidOperationException("Can't call storage on base type");
+    abstract public IIndexedRulesStorage IndexedRulesStorage();
+}
+
+public abstract class Rule: StorageableRule, IRule
+{
+    abstract public Type RuleType();
+    abstract public override IIndexedRulesStorage IndexedRulesStorage();
 }
 ```
 
 BoundRule - base class for bound rule, used in queries. RuleType method must return the base type of the rule.
 (to compare same base type rules with knowledge base, when class created manually must return rule class).
-IndexedRulesStorage method must return suitable IIndexedRulesStorage.
 Equals method, == and != operators used for bound rule to bound rule, bound rule to rule comparison.
 
 ```cs
-public abstract class BoundRule : Rule { }
+public abstract class BoundRule : IRule 
+{
+    abstract public Type RuleType();
+}
 ```
 
 RuleWithBody - class that represents rule by rule pattern and proof - function that returns query for matched bound rule.
+It's generic and it's type argument is type used by rule.
 
 ```cs
-public RuleWithBody(Rule head, Func<BoundRule, LogicalQuery> body)
+public abstract class RuleTemplate
 {
-    this.Head = head;
-    this.Body = body;
+    public Rule Head { get; protected set; }
+    public Func<BoundRule, LogicalQuery> Body { get; protected set; }
+}
+
+public sealed class RuleWithBody<T> : RuleTemplate where T: BoundRule
+{
+    public RuleWithBody(Rule head, Func<T, LogicalQuery> body)
+    {
+        this.Head = head;
+        this.Body = bound => body((T)bound);
+    }
 }
 ```
 
@@ -74,43 +109,89 @@ When fact consists of one value it can be made with generic FactAlias<T> (BoundF
 ```cs
 // Aliases implementation
     
-internal class IndexedFactsStorage<T> : IIndexedFactsStorage
+internal sealed class IndexedFactsStorage<T> : IIndexedFactsStorage
 {
-    HashSet<Fact> facts;
+    private HashSet<IFact> facts;
+    private long version = 0;
 
     public void Add(Fact fact)
     {
         facts.Add(fact);
+        version++;
     }
 
-    public List<Fact> FilteredBySample(BoundFact sample)
+    public void Retract(Fact fact)
+    {
+        facts.Remove(fact);
+        version++;
+    }
+
+    public List<IFact> FilteredBySample(BoundFact sample)
     {
         if (facts.Contains(sample))
         {
             BoundFactAlias<T> factCasted = (BoundFactAlias<T>)sample;
-            return new List<Fact> { (Fact)(new FactAlias<T>(factCasted.Value)) };
+            return new List<IFact> { new FactAlias<T>(factCasted.Value) };
         }
 
-        return new List<Fact>();
+        return new List<IFact>();
+    }
+
+    public long GetVersion()
+    {
+        return version;
     }
 }
 
-internal class IndexedRulesStorage : IIndexedRulesStorage
+internal sealed class IndexedRulesStorage<T> : IIndexedRulesStorage
 {
-    List<RuleWithBody> rules;
+    private RulesDictionary<T> rulesClustered = new RulesDictionary<T>();
+    private HashSet<RuleTemplate> rules = new HashSet<RuleTemplate>();
+    private long version = 0;
 
-    public void Add(RuleWithBody rule)
+    public void Add(RuleTemplate rule)
     {
-        rules.Add(rule);
+        if (rules.Contains(rule))
+        {
+            return;
+        }
+
+        var ruleCasted = (RuleWithBody<BoundRuleAlias<T>>)rule;
+        rulesClustered.Add(((RuleAlias<T>)ruleCasted.Head).Value, rule);
+
+        version++;
     }
 
-    public List<RuleWithBody> FilteredByPattern(BoundRule pattern)
+    public void Retract(RuleTemplate rule)
     {
-        return rules.Where(rule => rule.Head.Equals(pattern)).ToList();
+        if (!rules.Remove(rule))
+        {
+            return;
+        }
+
+        var ruleCasted = (RuleWithBody<BoundRuleAlias<T>>)rule;
+        rulesClustered.Retract(((RuleAlias<T>)ruleCasted.Head).Value, rule);
+
+        version++;
+    }
+
+    public List<RuleTemplate> FilteredByPattern(BoundRule pattern)
+    {
+        var patternCasted = ((BoundRuleAlias<T>)pattern).Value;
+
+        return rulesClustered.Get(patternCasted.Value is null ? Option<int>.None : patternCasted.Value.GetHashCode())
+            .GetValues()
+            .Where(rule => rule.Head.Equals(pattern))
+            .ToList();
+    }
+
+    public long GetVersion()
+    {
+        return version;
     }
 }
 
-public class FactAlias<T>: Fact
+public sealed class FactAlias<T>: Fact
 {
     public Variable<T> Value;
 
@@ -168,13 +249,18 @@ public class FactAlias<T>: Fact
         return typeof(T);
     }
 
-    public override IIndexedFactsStorage IndexedFactsStorage()
+    public static new IIndexedFactsStorage Storage()
     {
         return new IndexedFactsStorage<T>();
     }
+
+    public override IIndexedFactsStorage IndexedFactsStorage()
+    {
+        return Storage();
+    }
 }
 
-public class BoundFactAlias<T>: BoundFact
+public sealed class BoundFactAlias<T>: BoundFact
 {
     public BoundVariable<T> Value;
 
@@ -227,18 +313,13 @@ public class BoundFactAlias<T>: BoundFact
         return typeof(T);
     }
 
-    public override IIndexedFactsStorage IndexedFactsStorage()
-    {
-        return new IndexedFactsStorage<T>();
-    }
-
     public BoundFactAlias(BoundVariable<T> value)
     {
         Value = value;
     }
 }
 
-public class RuleAlias<T>: Rule
+public sealed class RuleAlias<T>: Rule
 {
     public RuleVariable<T> Value;
 
@@ -291,13 +372,18 @@ public class RuleAlias<T>: Rule
         return typeof(T);
     }
 
+    public static new IIndexedRulesStorage Storage()
+    {
+        return new IndexedRulesStorage<T>();
+    }
+
     public override IIndexedRulesStorage IndexedRulesStorage()
     {
-        return new IndexedRulesStorage();
+        return Storage();
     }
 }
 
-public class BoundRuleAlias<T>: BoundRule
+public sealed class BoundRuleAlias<T>: BoundRule
 {
     public BoundVariable<T> Value;
 
@@ -348,11 +434,6 @@ public class BoundRuleAlias<T>: BoundRule
     public override Type RuleType()
     {
         return typeof(T);
-    }
-
-    public override IIndexedRulesStorage IndexedRulesStorage()
-    {
-        return new IndexedRulesStorage();
     }
 }
 
@@ -512,12 +593,24 @@ public sealed class UnboundVariable<T> : BoundVariable<T>
 }
 ```
 
-RuleVariable - base class for rule patterns.
+RuleVariable - base class for rule patterns. Rule patterns need to implement AddFilter and GetFilter to be able to manage clusters on "fast" rule storages. They also need to implement OptionHash and PatternType methods.  
 
 ```cs
-public class RuleVariable<T> : Variable<T> 
+public interface ISpecificallyStorable<T> 
+{
+    public Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter();
+    public Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter();
+}
+    
+public abstract class RuleVariable<T> : Variable<T>, ISpecificallyStorable<T>
 { 
     protected RuleVariable() { }
+
+    public abstract Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter();
+    public abstract Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter();
+
+    public abstract Option<int> OptionHash();
+    public abstract Type PatternType();
 }
 ```
 
@@ -527,6 +620,49 @@ AnyValue - pattern that accepts any value.
 public sealed class AnyValue<T> : RuleVariable<T>
 {
     public AnyValue() { }
+    
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            if (!dictionary.ContainsKey(0))
+            {
+                dictionary.Add(0, new Cluster<RuleTemplate>());
+            }
+
+            return new List<Cluster<RuleTemplate>>
+            {
+                // all values are tossed to one cluster
+                dictionary[0]
+            };
+        };
+    }
+
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            var list = new List<Cluster<RuleTemplate>>();
+
+            if (dictionary.ContainsKey(0))
+            {
+                // all values are tossed to one cluster
+                list.Add(dictionary[0]);
+            };
+
+            return list;
+        };
+    }
+
+    public override Type PatternType()
+    {
+        return typeof(AnyValue<T>);
+    }
+
+    public override Option<int> OptionHash()
+    {
+        return 0;
+    }
 }
 ```
 
@@ -536,6 +672,58 @@ AnyValueBound - pattern that accepts any bound value.
 public sealed class AnyValueBound<T> : RuleVariable<T>
 {
     public AnyValueBound() { }
+    
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            var list = new List<Cluster<RuleTemplate>>();
+
+            hash.Match(
+                Some: (value) => {
+                    if (!dictionary.ContainsKey(0))
+                    {
+                        dictionary.Add(0, new Cluster<RuleTemplate>());
+                    };
+
+                    list.Add(dictionary[0]);
+                },
+                None: () => { }
+            );
+
+            return list;
+        };
+    }
+
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            var list = new List<Cluster<RuleTemplate>>();
+
+            hash.Match(
+                Some: (value) => {
+                    if (dictionary.ContainsKey(0))
+                    {
+                        list.Add(dictionary[0]);
+                    };
+                },
+                None: () => { }
+            );
+
+            return list;
+        };
+    }
+
+    public override Type PatternType()
+    {
+        return typeof(AnyValueBound<T>);
+    }
+
+    public override Option<int> OptionHash()
+    {
+        return 0;
+    }
 }
 ```
 
@@ -547,6 +735,44 @@ public sealed class Equal<T> : RuleVariable<T>
     public Equal(T value)
     {
         Value = value;
+    }
+    
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            if (!dictionary.ContainsKey(hash))
+            {
+                dictionary.Add(hash, new Cluster<RuleTemplate>());
+            }
+
+            return new List<Cluster<RuleTemplate>> { dictionary[hash] };
+        };
+    }
+
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            var list = new List<Cluster<RuleTemplate>>();
+
+            if (dictionary.ContainsKey(hash))
+            {
+                list.Add(dictionary[hash]);
+            }
+
+            return list;
+        };
+    }
+
+    public override Type PatternType()
+    {
+        return typeof(Equal<T>);
+    }
+
+    public override Option<int> OptionHash()
+    {
+        return Value is null ? Option<int>.None : Value.GetHashCode();
     }
 }
 ```
@@ -560,6 +786,47 @@ public sealed class NotEqual<T> : RuleVariable<T>
     {
         Value = value;
     }
+    
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            if (!dictionary.ContainsKey(hash))
+            {
+                dictionary.Add(hash, new Cluster<RuleTemplate>());
+            }
+
+            return new List<Cluster<RuleTemplate>> { dictionary[hash] };
+        };
+    }
+
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            var filtered = dictionary
+                .Where(pair => pair.Key != hash);
+
+            var list = new List<Cluster<RuleTemplate>>();
+
+            foreach (var pair in filtered)
+            {
+                list.Add(pair.Value);
+            }
+
+            return list;
+        };
+    }
+
+    public override Type PatternType()
+    {
+        return typeof(NotEqual<T>);
+    }
+
+    public override Option<int> OptionHash()
+    {
+        return Value is null ? Option<int>.None : Value.GetHashCode();
+    }
 }
 ```
 
@@ -572,21 +839,131 @@ public sealed class NotEqualBound<T> : RuleVariable<T>
     {
         Value = value;
     }
+    
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            var list = new List<Cluster<RuleTemplate>>();
+
+            if (!hash.HasValue)
+            {
+                return list;
+            }
+
+            if (!dictionary.ContainsKey(hash))
+            {
+                dictionary.Add(hash, new Cluster<RuleTemplate>());
+            }
+
+            list.Add(dictionary[hash]);
+            return list;
+        };
+    }
+
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            var list = new List<Cluster<RuleTemplate>>();
+
+            if (!hash.HasValue)
+            {
+                return list;
+            }
+
+            var filtered = dictionary
+                .Where(pair => pair.Key != hash);
+
+            foreach (var pair in filtered)
+            {
+                list.Add(pair.Value);
+            }
+
+            return list;
+        };
+    }
+
+    public override Type PatternType()
+    {
+        return typeof(NotEqualBound<T>);
+    }
+
+    public override Option<int> OptionHash()
+    {
+        return Value.GetHashCode();
+    }
 }
 ```
 
 Unbound - pattern that accepts only unbound values. 
 
 ```cs
-public sealed class UnboundValue<T> : RuleVariable<T> {}
+public sealed class UnboundValue<T> : RuleVariable<T> 
+{
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> AddFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            var list = new List<Cluster<RuleTemplate>>();
+
+            hash.Match(
+                Some: (value) => { },
+                None: () => {
+                    if (!dictionary.ContainsKey(0))
+                    {
+                        dictionary.Add(0, new Cluster<RuleTemplate>());
+                    }
+
+                    list.Add(dictionary[0]);
+                }
+            );
+
+            return list;
+        };
+    }
+
+    public override Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> GetFilter()
+    {
+        return (hash, dictionary) =>
+        {
+            var list = new List<Cluster<RuleTemplate>>();
+
+            hash.Match(
+                Some: (value) => { },
+                None: () => {
+                    if (dictionary.ContainsKey(0))
+                    {
+                        list.Add(dictionary[0]);
+                    }
+                }
+            );
+
+            return list;
+        };
+    }
+
+    public override Type PatternType()
+    {
+        return typeof(UnboundValue<T>);
+    }
+
+    public override Option<int> OptionHash()
+    {
+        return Option<int>.None;
+    }
+}
 ```
 
 ### Indexed storage
 
-Indexed storage uses indexing with hashcodes to run faster fact-checks and possibly will be able to run queries faster on rules too.
+Indexed storage uses indexing with hashcodes to run faster fact-checks and faster rule-checks as facts and rules count grows.
+
 Standard implementations of IIndexedFactsStorage use HashSet<T> and Dictionary<int, Cluster<Fact>> for each indexable property. 
 Clusters are objects that contain List<Fact> with facts that have properties with equal hashcode.  
+
 Standard implementations of IIndexedRulesStorage use List<T>.
+And Fast version uses RuleDictionary<T>.
     
 ```cs
 // Storages definition
@@ -597,6 +974,11 @@ public struct Cluster<T>
 
     public Cluster() { }
 
+    public Cluster(List<T> objects)
+    {
+        this.objects = objects;
+    }
+
     public int Size { get { return objects.Count; } }
 
     public void Add(T obj)
@@ -604,117 +986,268 @@ public struct Cluster<T>
         objects.Add(obj);
     }
 
+    public void Remove(T obj)
+    {
+        objects.Remove(obj);
+    }
+
     public List<T> GetValues()
-        => objects.ToList();
+        => objects;
 }
 
 public interface IIndexedFactsStorage
 {
     public void Add(Fact fact);
 
-    public List<Fact> FilteredBySample(BoundFact sample);
+    public void Retract(Fact fact);
+
+    public List<IFact> FilteredBySample(BoundFact sample);
+
+    public long GetVersion();
 }
 
 public interface IIndexedRulesStorage
 {
-    public void Add(RuleWithBody rule);
+    public void Add(RuleTemplate rule);
 
-    public List<RuleWithBody> FilteredByPattern(BoundRule pattern);
-}    
+    public void Retract(RuleTemplate rule);
+
+    public List<RuleTemplate> FilteredByPattern(BoundRule pattern);
+
+    public long GetVersion();
+} 
+```
+    
+Rule dictionaries use dictionaries for each pattern present in the stored rules managing them with filters provided by pattern implementation. In most of the operations they gather data through all the dictionaries and operate on the aggregated result.
+    
+```cs
+public class RulesDictionary<T>
+{
+    public class PatternBasedIndexedCollection<T>
+    {
+        Dictionary<Option<int>, Cluster<RuleTemplate>> rules;
+
+        Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> addFilter;
+        Func<Option<int>, Dictionary<Option<int>, Cluster<RuleTemplate>>, List<Cluster<RuleTemplate>>> getFilter;
+
+        public PatternBasedIndexedCollection(RuleVariable<T> ruleVariable) 
+        { 
+            this.rules = new Dictionary<Option<int>, Cluster<RuleTemplate>>();
+
+            addFilter = ruleVariable.AddFilter();
+            getFilter = ruleVariable.GetFilter();
+        }
+
+        public IEnumerable<RuleTemplate> Get(Option<int> hash)
+        {
+            var list = getFilter(hash, rules);
+
+            return list.Count() == 0 ? new List<RuleTemplate>() : list
+                .Select(cluster => (IEnumerable<RuleTemplate>)cluster.GetValues())
+                .Aggregate((acc, list) => acc.Concat(list));
+        }
+
+        public int Count(Option<int> hash)
+        {
+            var list = getFilter(hash, rules);
+
+            return list.Count == 0 ? 0 : list
+                .Select(cluster => cluster.Size)
+                .Aggregate((acc, size) => acc + size);
+        }
+
+        public void Add(Option<int> hash, RuleTemplate template)
+        {
+            addFilter(hash, rules).ForEach(cluster => cluster.Add(template));
+        }
+
+        public void Retract(Option<int> hash, RuleTemplate template)
+        {
+            addFilter(hash, rules).ForEach(cluster => cluster.Remove(template));
+        }
+    }
+
+    private Dictionary<Type, PatternBasedIndexedCollection<T>> patternBasedCollections = 
+        new Dictionary<Type, PatternBasedIndexedCollection<T>>();
+
+    public int Size(Option<int> hash)
+    {
+        var list = patternBasedCollections.Values;
+
+        return list.Count == 0 ? 0 : list
+            .Select(collection => collection.Count(hash))
+            .Aggregate((acc, size) => acc + size);
+    }
+
+    public Cluster<RuleTemplate> Get(Option<int> hash)
+    {
+        var list = patternBasedCollections.Values
+            .Select(collection => collection.Get(hash));
+
+        var values = list.Count() == 0 ? new List<RuleTemplate>() : list
+            .Aggregate((acc, list) => acc.Concat(list))
+            .ToList();
+
+        return new Cluster<RuleTemplate>(values);
+    }
+
+    public void Add(RuleVariable<T> pattern, RuleTemplate template)
+    {
+        Option<int> hash = pattern.OptionHash();
+        Type patternType = pattern.PatternType();
+
+        if (!patternBasedCollections.ContainsKey(patternType))
+        {
+            patternBasedCollections.Add(patternType, new PatternBasedIndexedCollection<T>(pattern));
+        }
+
+        patternBasedCollections[patternType].Add(hash, template);
+    }
+
+    public void Retract(RuleVariable<T> pattern, RuleTemplate template)
+    {
+        Option<int> hash = pattern.OptionHash();
+        Type patternType = pattern.PatternType();
+
+        if (!patternBasedCollections.ContainsKey(patternType))
+        {
+            patternBasedCollections.Add(patternType, new PatternBasedIndexedCollection<T>(pattern));
+        }
+
+        patternBasedCollections[patternType].Retract(hash, template);
+    }
+}
 ```
 
 ### Knowledge base
 
 Knowledge base groups facts and rules.
-Facts added with DeclareFact method. Rules added with DeclareRule method. CheckForFacts and CheckForRules methods return initializers for logical actions.
+Facts added with DeclareFact method. Rules added with DeclareRule method. Adding facts implicitly adds storage for that fact type. If the flow of a program does not state that at least one fact will be added storage can be added explicitly with AddFactStorage/AddRuleStorage.
+Facts removed with RetractFact method. Rules removed with RetractRule method.
+CheckForFacts and CheckForRules methods return initializers for logical actions.
 
 ```cs
 public sealed class KnowledgeBase
 {
-    internal List<Predicate<List<IBound>>> CheckForFacts(BoundFact sampleFact)
+    internal BacktrackIterator CheckForFacts(BoundFact sampleFact)
     {
-        List<Predicate<List<IBound>>> factCheckPredicates =
-            new List<Predicate<List<IBound>>>();
-
         Type factType = sampleFact.FactType();
 
-        if (_facts.ContainsKey(factType))
-        {
-            foreach (Fact fact in _facts[factType].FilteredBySample(sampleFact))
-            {
-                factCheckPredicates.Add(copyStorage =>
-                {
-                    bool comparisonResult = sampleFact.Equals(fact);
-                    sampleFact.Bind(fact, copyStorage);
-                    return comparisonResult;
-                });
-            }
-        }
-        else
+        if (!_facts.ContainsKey(factType))
         {
             throw new ArgumentException("No facts of that type");
         }
 
-        return factCheckPredicates;
+        bool enumeratorIsUpToDate = false;
+
+        long version = _facts[factType].GetVersion();
+        List<IFact> factsFiltered = _facts[factType].FilteredBySample(sampleFact);
+        var enumerator = factsFiltered.GetEnumerator();
+
+        return new BacktrackIterator
+        (
+            () => {
+                while (true)
+                {
+                    if (!enumeratorIsUpToDate)
+                    {
+                        var currentVersion = _facts[factType].GetVersion();
+                        if (version != currentVersion)
+                        {
+                            factsFiltered = _facts[factType].FilteredBySample(sampleFact);
+                            version = currentVersion;
+                        }
+
+                        enumerator = factsFiltered.GetEnumerator();
+                        enumeratorIsUpToDate = true;
+                    }
+
+                    if (!enumerator.MoveNext())
+                    {
+                        return null;
+                    }
+
+                    bool result = sampleFact.Equals(enumerator.Current);
+
+                    if (!result)
+                    {
+                        continue;
+                    }
+
+                    return copyStorage =>
+                    {
+                        sampleFact.Bind((Fact)enumerator.Current, copyStorage);
+                        return result;
+                    };
+                }
+            },
+            () => { enumeratorIsUpToDate = false; }
+        );
     }
 
     internal BacktrackIterator CheckForRules(BoundRule ruleHead)
     {
         Type ruleType = ruleHead.RuleType();
 
-        if (_rules.ContainsKey(ruleType))
-        {
-            List<RuleWithBody> rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
-            LogicalQuery innerQuery = null;
-            bool enumeratorIsUpToDate = false;
-            var enumerator = rulesFiltered.GetEnumerator();
-
-            return new BacktrackIterator
-            (
-                () => {
-                    while (true)
-                    {
-                        if (!enumeratorIsUpToDate)
-                        {
-                            rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
-                            enumerator = rulesFiltered.GetEnumerator();
-                            enumeratorIsUpToDate = true;
-                        }
-
-                        if (innerQuery is not null)
-                        {
-                            innerQuery.Reset();
-                        }
-
-                        if (!enumerator.MoveNext())
-                        {
-                            return null;
-                        }
-
-                        if (innerQuery is null)
-                        {
-                            innerQuery = enumerator.Current.Body(ruleHead);
-                        }
-
-                        bool result = innerQuery.Execute();
-
-                        if (!result)
-                        {
-                            innerQuery.Reset();
-                            innerQuery = null;
-                            continue;
-                        }
-
-                        return copyStorage => result;
-                    }
-                },
-                () => { enumeratorIsUpToDate = false; }
-            );
-        }
-        else
+        if (!_rules.ContainsKey(ruleType))
         {
             throw new ArgumentException("No rules of that type");
         }
+
+        LogicalQuery innerQuery = null;
+        bool enumeratorIsUpToDate = false;
+
+        long version = _rules[ruleType].GetVersion();
+        List<RuleTemplate> rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
+        var enumerator = rulesFiltered.GetEnumerator();
+
+        return new BacktrackIterator
+        (
+            () => {
+                while (true)
+                {
+                    if (!enumeratorIsUpToDate)
+                    {
+                        var currentVersion = _rules[ruleType].GetVersion();
+                        if (version != currentVersion)
+                        {
+                            rulesFiltered = _rules[ruleType].FilteredByPattern(ruleHead);
+                            version = currentVersion;
+                        }
+
+                        enumerator = rulesFiltered.GetEnumerator();
+                        enumeratorIsUpToDate = true;
+                    }
+
+                    if (innerQuery is not null)
+                    {
+                        innerQuery.Reset();
+                    }
+
+                    if (!enumerator.MoveNext())
+                    {
+                        return null;
+                    }
+
+                    if (innerQuery is null)
+                    {
+                        innerQuery = enumerator.Current.Body(ruleHead);
+                    }
+
+                    bool result = innerQuery.Execute();
+
+                    if (!result)
+                    {
+                        innerQuery.Reset();
+                        innerQuery = null;
+                        continue;
+                    }
+
+                    return copyStorage => result;
+                }
+            },
+            () => { enumeratorIsUpToDate = false; }
+        );
     }
 
     public void DeclareFact(Fact fact)
@@ -729,7 +1262,13 @@ public sealed class KnowledgeBase
         _facts[factType].Add(fact);
     }
 
-    public void DeclareRule(RuleWithBody rule)
+    public void RetractFact(Fact fact)
+    {
+        Type factType = fact.FactType();
+        _facts[factType].Retract(fact);
+    }
+
+    public void DeclareRule<T>(RuleWithBody<T> rule) where T : BoundRule
     {
         Type ruleType = rule.Head.RuleType();
 
@@ -739,6 +1278,22 @@ public sealed class KnowledgeBase
         }
 
         _rules[ruleType].Add(rule);
+    }
+
+    public void RetractRule<T>(RuleWithBody<T> rule) where T : BoundRule
+    {
+        Type ruleType = rule.Head.RuleType();
+        _rules[ruleType].Retract(rule);
+    }
+
+    public void AddFactStorage(Type type, IIndexedFactsStorage storage)
+    { 
+        _facts.Add(type, storage);
+    }
+
+    public void AddRuleStorage(Type type, IIndexedRulesStorage storage)
+    {
+        _rules.Add(type, storage);
     }
 }
 ```
