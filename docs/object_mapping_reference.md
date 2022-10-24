@@ -33,13 +33,18 @@ public enum MappingMode
 [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
 public class FactMemberAttribute : System.Attribute {}
 
-[System.AttributeUsage(System.AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+[System.AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false, AllowMultiple = false)]
 public class FactAttribute : System.Attribute
 {
     public FactAttribute(string factName, MappingMode mappingMode = MappingMode.PublicProperties)
     {
         FactName = factName;
         MappingMode = mappingMode;
+
+        if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(factName))
+        {
+            throw new System.ArgumentException("Not a valid class name");
+        }
     }
 
     public string FactName { get; }
@@ -51,7 +56,7 @@ public class FactAttribute : System.Attribute
 NoIndexingAttribute marks classes that are not suitable for fast fact-check with IIndexedFactsStorage on hashcodes.
 
 ```cs
-[System.AttributeUsage(System.AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+[System.AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
 public class NoIndexingAttribute: System.Attribute
 {
     public NoIndexingAttribute() { }
@@ -65,6 +70,15 @@ NoHashComparableAttribute marks class members that can't be used for indexing in
 public class NotHashComparableAttribute: System.Attribute
 {
     public NotHashComparableAttribute() { }
+}
+```
+
+HighRuleCountDomainAttribute marks classes that are suitable for fast rule-check.
+```cs
+[System.AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
+public class HighRuleCountDomainAttribute: System.Attribute
+{
+    public HighRuleCountDomainAttribute() { }
 }
 ```
 
