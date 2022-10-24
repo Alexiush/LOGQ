@@ -72,6 +72,21 @@ Build methods add different logical actions to the query:
       return AddNode(actionInitializer, true);
   }
 
+  public LogicalQuery With(ICollection<Func<bool>> actionInitializer)
+  {
+      return AddNode(actionInitializer, true);
+  }
+
+  public LogicalQuery With(ICollection<Action<List<IBound>>> actionInitializer)
+  {
+      return AddNode(actionInitializer, true);
+  }
+
+  public LogicalQuery With(ICollection<Action> actionInitializer)
+  {
+      return AddNode(actionInitializer, true);
+  }
+
   public LogicalQuery With(Predicate<List<IBound>> actionInitializer)
   {
       return AddNode(actionInitializer, true);
@@ -115,6 +130,21 @@ Build methods add different logical actions to the query:
   }
 
   public LogicalQuery OrWith(ICollection<Predicate<List<IBound>>> actionInitializer)
+  {
+      return AddNode(actionInitializer, false);
+  }
+
+  public LogicalQuery OrWith(ICollection<Func<bool>> actionInitializer)
+  {
+      return AddNode(actionInitializer, false);
+  }
+
+  public LogicalQuery OrWith(ICollection<Action<List<IBound>>> actionInitializer)
+  {
+      return AddNode(actionInitializer, false);
+  }
+
+  public LogicalQuery OrWith(ICollection<Action> actionInitializer)
   {
       return AddNode(actionInitializer, false);
   }
@@ -232,22 +262,35 @@ namespace LOGQ.Extensions
     {
         public static LogicalAction Not(ICollection<Predicate<List<IBound>>> actionsToTry)
         {
-            return new LogicalAction(actionsToTry
-                .Select<Predicate<List<IBound>>, Predicate<List<IBound>>>
-                (predicate => context => !predicate(context)).ToList());
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
+        }
+
+        public static LogicalAction Not(ICollection<Func<bool>> actionsToTry)
+        {
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
+        }
+
+        public static LogicalAction Not(ICollection<Action<List<IBound>>> actionsToTry)
+        {
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
+        }
+
+        public static LogicalAction Not(ICollection<Action> actionsToTry)
+        {
+            return new LogicalAction(new BacktrackIterator(actionsToTry).Negate());
         }
 
         public static LogicalAction Not(Predicate<List<IBound>> actionToTry) 
             => Not(new List<Predicate<List<IBound>>> { actionToTry });
 
         public static LogicalAction Not(Func<bool> actionToTry)
-            => Not(copyStorage => actionToTry());
+            => Not(actionToTry.ToPredicate());
 
         public static LogicalAction Not(Action<List<IBound>> actionToTry)
-            => Not(new List<Predicate<List<IBound>>> { copyStorage => { actionToTry(copyStorage); return true; } });
+            => Not(actionToTry.ToPredicate());
 
         public static LogicalAction Not(Action actionToTry)
-            => Not(new List<Predicate<List<IBound>>> { copyStorage => { actionToTry(); return true; } });
+            => Not(actionToTry.ToPredicate());
 
         public static LogicalAction Not(BacktrackIterator iterator)
         {
@@ -264,7 +307,7 @@ namespace LOGQ.Extensions
                 {
                     if (!hasConsulted)
                     {
-                        factsIterator = new BacktrackIterator(knowledgeBase.CheckForFacts(fact));
+                        factsIterator = knowledgeBase.CheckForFacts(fact);
                         hasConsulted = true;
                     }
 
@@ -277,7 +320,7 @@ namespace LOGQ.Extensions
             return Not(iterator);
         }
 
-        public static LogicalAction Not(BoundRule rule, KnowledgeBase knowledgeBase)
+        public static LogicalAction Not(BoundRule rule, KnowledgeBase knowledgeBase) 
         {
             bool hasConsulted = false;
             BacktrackIterator ruleIterator = null;
